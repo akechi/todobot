@@ -78,6 +78,7 @@ def main():
                     c = con.cursor()
                     nickname = args[2]
                     text = ' '.join(args[3:])
+                    text += ' (by %s) ' % event['message']['speaker_id']
                     c.execute(u"insert into TODO (username, description, created_at, status) values (?, ?, datetime('now', 'localtime'), 0);", (nickname, unicode(text)))
                     id = c.lastrowid
                     c.execute(u"select * from TODO where id = ?", (id,))
