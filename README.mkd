@@ -1,0 +1,28 @@
+## lingr TODObot
+
+It provides task management feature to lingr room.
+
+## Usage
+
+This bot provides you some command.
+
+### Manage your own tasks
+
+    #todo add [DESCRIPTION]
+    #todo done [TASK_ID]
+    #todo del [TASK_ID]
+    #todo list
+
+### Manage someone's tasks
+
+    #todo addto [LINGR_USER_NAME] [DESCRIPTION]
+    #todo listof [LINGR_USER_NAME]
+
+
+## Authors
+
+* aoisensi
+
+
+
+
