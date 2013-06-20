@@ -39,7 +39,7 @@ Everyone can manage group tasks.
 
 ### Admin commands
 
-Only sudoser can use those following commands.
+Only sudoer can use those following commands.
 
     #todo sudodel [TASK_ID]
 
