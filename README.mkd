@@ -9,15 +9,39 @@ This bot provides you some command.
 ### Manage your own tasks
 
     #todo add [DESCRIPTION]
+    #todo list
+    #todo list-all
+    #todo list-done
+    #todo show [TASK_ID]
     #todo done [TASK_ID]
     #todo del [TASK_ID]
-    #todo list
 
 ### Manage someone's tasks
 
     #todo addto [LINGR_USER_NAME] [DESCRIPTION]
     #todo listof [LINGR_USER_NAME]
+    #todo listof-all [LINGR_USER_NAME]
+    #todo listof-done [LINGR_USER_NAME]
+    #todo show [TASK_ID]
 
+### Manage group's tasks
+
+Group name is start with @(at) char.
+Everyone can manage group tasks.
+
+    #todo addto @[GROUP_NAME] [DESCRIPTION]
+    #todo listof @[GROUP_NAME]
+    #todo listof-all @[GROUP_NAME]
+    #todo listof-done @[GROUP_NAME]
+    #todo show [TASK_ID]
+    #todo done [TASK_ID]
+    #todo del [TASK_ID]
+
+### Admin commands
+
+Only sudoser can use those following commands.
+
+    #todo sudodel [TASK_ID]
 
 ## Authors
 
