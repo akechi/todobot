@@ -37,13 +37,13 @@ class ToDoBot(object):
 
     buffering_size = 500 #byte
 
-    def __init__(self, bot_id, bot_secret):
+    def __init__(self, bot_id, bot_secret, dbpath):
         self.bot_id = bot_id
         if bot_secret:
             self.verifier = hashlib.sha1(bot_id + bot_secret).hexdigest()
         else:
             self.verifier = None
-        self.con = sqlite3.connect('todo.sql', isolation_level=None)
+        self.con = sqlite3.connect(dbpath, isolation_level=None)
         self.con.text_factory = str
         self.buffers = {}
 
@@ -273,9 +273,9 @@ class ToDoBot(object):
 TEST = True
 
 if TEST:
-    bot = ToDoBot('lion', bot_secret=None)
+    bot = ToDoBot('lion', bot_secret=None, dbpath='todo.sql')
 else:
-    bot = ToDoBot('lion', bot_secret=open('todo.txt').read())
+    bot = ToDoBot('lion', bot_secret=open('todo.txt').read(), dbpath='todo.sql')
 
 
 def serve_as_cgi(content_length):
