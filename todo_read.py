@@ -35,6 +35,8 @@ class ToDoBot(object):
     prefix = 'handle_'
     adminnicks = set(['aoisensi'])
 
+    buffering_size = 500 #byte
+
     def __init__(self, bot_id, bot_secret):
         self.bot_id = bot_id
         if bot_secret:
@@ -43,6 +45,7 @@ class ToDoBot(object):
             self.verifier = None
         self.con = sqlite3.connect('todo.sql', isolation_level=None)
         self.con.text_factory = str
+        self.buffers = {}
 
     def post(self, room, text):
         '''
@@ -55,6 +58,22 @@ class ToDoBot(object):
             r = urllib2.urlopen('http://lingr.com/api/room/say?' + params)
         else:
             print >> sys.stderr, room, ":", text
+
+    def buffered_post(self, room, text):
+        buf = self.buffers.get(room, None)
+        if buf and sum([len(line) for line in buf]) + text > self.buffering_size:
+            self.flush_buf(room)
+        buf = self.buffers.get(room, None)
+        if buf is None:
+            buf = []
+        buf.append(text)
+        self.buffers[room] = buf
+
+    def flush_buf(self, room):
+        buf = self.buffers.get(room, None)
+        if buf:
+            self.post(room, ''.join(buf))
+            self.buffers[room] = None
 
     def handle(self, event):
         args = event['message']['text'].split()
