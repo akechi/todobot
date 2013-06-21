@@ -132,7 +132,7 @@ class ToDoBot(object):
         cur.execute(u"insert into TODO (username, description, created_at, status) values (?, ?, datetime('now', 'localtime'), 0);", (whom, unicode(text)))
         id = c.lastrowid
         cur.execute(u"select * from TODO where id = ?", (id,))
-        row = c.fetchone()
+        row = cur.fetchone()
         self.post(room, prnformat(row))
 
     def handle_addto(self, cur, whom, event, args):
@@ -143,66 +143,73 @@ class ToDoBot(object):
         cur.execute(u"insert into TODO (username, description, created_at, status) values (?, ?, datetime('now', 'localtime'), 0);", (nickname, unicode(text)))
         id = c.lastrowid
         cur.execute(u"select * from TODO where id = ?", (id,))
-        row = c.fetchone()
+        row = cur.fetchone()
         self.post(room, prnformat(row))
 
     def handle_list_all(self, cur, whom, event, args):
         """#todo listof-all [nickname]"""
         cur.execute(u"select * from TODO where username = ?", (whom,))
-        for row in c:
-            self.post(room, prnformat(row))
+        for row in cur:
+            self.buffered_post(room, prnformat(row))
+        self.flush_buf(room)
 
     def handle_list_done(self, cur, whom, event, args):
         """#todo list-done"""
         cur.execute(u"select * from TODO where username = ? AND status = 1", (whom,))
-        for row in c:
-            self.post(room, prnformat(row))
+        for row in cur:
+            self.buffered_post(room, prnformat(row))
+        self.flush_buf(room)
 
     def handle_list(self, cur, whom, event, args):
         """#todo list"""
         cur.execute(u"select * from TODO where username = ? AND status = 0", (whom,))
-        for row in c:
-            self.post(room, prnformat(row))
+        for row in cur:
+            self.buffered_post(room, prnformat(row))
+        self.flush_buf(room)
 
     def handle_listof_all(self, cur, whom, event, args):
         """#todo listof-all"""
         whose = args[2]
         cur.execute(u"select * from TODO where username = ?", (whose,))
-        for row in c:
-            self.post(room, prnformat(row))
+        for row in cur:
+            self.buffered_post(room, prnformat(row))
+        self.flush_buf(room)
 
     def handle_listof_done(self, cur, whom, event, args):
         """#todo listof-done [nickname]"""
         whose = args[2]
         cur.execute(u"select * from TODO where username = ? AND status = 1", (whose,))
-        for row in c:
-            self.post(room, prnformat(row))
+        for row in cur:
+            self.buffered_post(room, prnformat(row))
+        self.flush_buf(room)
 
     def handle_listof(self, cur, whom, event, args):
         """#todo listof [nickname]"""
         whose = args[2]
         cur.execute(u"select * from TODO where username = ? AND status = 0", (whose,))
-        for row in c:
-            self.post(room, prnformat(row))
+        for row in cur:
+            self.buffered_post(room, prnformat(row))
+        self.flush_buf(room)
     
     def handle_list_everything(self, cur, whom, event, args):
         """#todo list-everything"""
         cur.execute(u"select * from TODO")
-        for row in c:
-            self.post(room, prnformat(row))
+        for row in cur:
+            self.buffered_post(room, prnformat(row))
+        self.flush_buf(room)
 
     def handle_done(self, cur, whom, event, args):
         """#todo done [id]"""
         if(args[2].isdigit()):
             id = int(args[2])
             cur.execute(u"select (username) from TODO where id = ?", (id,))
-            usernames = c.fetchone()
+            usernames = cur.fetchone()
             if(usernames == None):
                 self.post(room, "そんな予定はない")
             elif(usernames[0][0] == '@' or usernames[0] == whom):
                 cur.execute(u"update TODO set status =1 WHERE id = ?;", (args[2],))
                 cur.execute(u"select * from TODO where id = ?", (id,))
-                row = c.fetchone()
+                row = cur.fetchone()
                 self.post(room, prnformat(row))
             else:
                 self.post(room, "それはお前の予定じゃない")
@@ -214,7 +221,7 @@ class ToDoBot(object):
         if(args[2].isdigit()):
             id = int(args[2])
             cur.execute(u"select (username) from TODO where id = ?", (id,))
-            usernames = c.fetchone()
+            usernames = cur.fetchone()
             if(usernames == None):
                 self.post(room, "そんな予定はない")
             elif(usernames[0] == '@' or usernames[0] == whom):
@@ -230,7 +237,7 @@ class ToDoBot(object):
         if(args[2].isdigit()):
             id = int(args[2])
             cur.execute(u"select * from TODO where id = ?", (id,))
-            row = c.fetchone()
+            row = cur.fetchone()
             if(row == None):
                 self.post(room, "そんな予定はない")
             else:
@@ -244,7 +251,7 @@ class ToDoBot(object):
             if self.is_admin(whom):
                 id = int(args[2])
                 cur.execute(u"select (username) from TODO where id = ?", (id,))
-                usernames = c.fetchone()
+                usernames = cur.fetchone()
                 if(usernames == None):
                     self.post(room, "そんな予定はない")
                 else:
@@ -260,7 +267,7 @@ class ToDoBot(object):
         if self.is_admin(whom):
             if(args[2].isdigit()):
                 cur.execute(u"select (username) from TODO where id = ?", (int(args[2]),))
-                print str(c.fetchone())
+                print str(cur.fetchone())
 
 
 TEST = True
