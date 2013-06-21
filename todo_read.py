@@ -27,6 +27,7 @@ def prnformat(row):
     s.append(row[3])
     return ' '.join(s)
 
+
 class ToDoBot(object):
     def __init__(self, bot_id, bot_secret):
         self.bot_id = bot_id
@@ -70,10 +71,11 @@ class ToDoBot(object):
         con = sqlite3.connect('todo.sql', isolation_level=None)
         con.text_factory = str
 
+        cur = con.cursor()
         whom = event['message']['speaker_id']
         
         try:
-            r = method(con, whom, event, args)
+            r = method(cur, whom, event, args)
         except Exception as e:
             print str(type(e))
             print str(e.args)
@@ -97,88 +99,78 @@ class ToDoBot(object):
 このボットはあるふぁばんです
 何があっても知りません""")
 
-    def handle_add(self, con, whom , event, args):
-        c = con.cursor()
+    def handle_add(self, cur, whom , event, args):
         text = ' '.join(args[2:])
-        c.execute(u"insert into TODO (username, description, created_at, status) values (?, ?, datetime('now', 'localtime'), 0);", (whom, unicode(text)))
+        cur.execute(u"insert into TODO (username, description, created_at, status) values (?, ?, datetime('now', 'localtime'), 0);", (whom, unicode(text)))
         id = c.lastrowid
-        c.execute(u"select * from TODO where id = ?", (id,))
+        cur.execute(u"select * from TODO where id = ?", (id,))
         row = c.fetchone()
         self.post(room, prnformat(row))
 
-    def handle_addto(self, con, whom, event, args):
-        c = con.cursor()
+    def handle_addto(self, cur, whom, event, args):
         nickname = args[2] #target
         text = ' '.join(args[3:])
         text += ' (by %s) ' % whom #event['message']['speaker_id']
-        c.execute(u"insert into TODO (username, description, created_at, status) values (?, ?, datetime('now', 'localtime'), 0);", (nickname, unicode(text)))
+        cur.execute(u"insert into TODO (username, description, created_at, status) values (?, ?, datetime('now', 'localtime'), 0);", (nickname, unicode(text)))
         id = c.lastrowid
-        c.execute(u"select * from TODO where id = ?", (id,))
+        cur.execute(u"select * from TODO where id = ?", (id,))
         row = c.fetchone()
         self.post(room, prnformat(row))
 
-    def handle_list_all(self, con, whom, event, args):
-        c = con.cursor()
-        c.execute(u"select * from TODO where username = ?", (whom,))
+    def handle_list_all(self, cur, whom, event, args):
+        cur.execute(u"select * from TODO where username = ?", (whom,))
         for row in c:
             self.post(room, prnformat(row))
 
-    def handle_list_done(self, con, whom, event, args):
-        c = con.cursor()
-        c.execute(u"select * from TODO where username = ? AND status = 1", (whom,))
+    def handle_list_done(self, cur, whom, event, args):
+        cur.execute(u"select * from TODO where username = ? AND status = 1", (whom,))
         for row in c:
             self.post(room, prnformat(row))
 
-    def handle_list(self, con, whom, event, args):
+    def handle_list(self, cur, whom, event, args):
         """elif(args[1] == 'list'):"""
-        c = con.cursor()
-        c.execute(u"select * from TODO where username = ? AND status = 0", (whom,))
+        cur.execute(u"select * from TODO where username = ? AND status = 0", (whom,))
         for row in c:
             self.post(room, prnformat(row))
 
-    def handle_listof_all(self, con, whom, event, args):
+    def handle_listof_all(self, cur, whom, event, args):
         """elif(args[1] == 'listof-all'):"""
         whose = args[2]
-        c = con.cursor()
-        c.execute(u"select * from TODO where username = ?", (whose,))
+        cur.execute(u"select * from TODO where username = ?", (whose,))
         for row in c:
             self.post(room, prnformat(row))
 
-    def handle_listof_done(self, con, whom, event, args):
+    def handle_listof_done(self, cur, whom, event, args):
         """elif(args[1] == 'listof-done'):"""
         whose = args[2]
-        c = con.cursor()
-        c.execute(u"select * from TODO where username = ? AND status = 1", (whose,))
+        cur.execute(u"select * from TODO where username = ? AND status = 1", (whose,))
         for row in c:
             self.post(room, prnformat(row))
 
-    def handle_listof(self, con, whom, event, args):
+    def handle_listof(self, cur, whom, event, args):
         """elif(args[1] == 'listof'):"""
         whose = args[2]
-        c = con.cursor()
-        c.execute(u"select * from TODO where username = ? AND status = 0", (whose,))
+        cur.execute(u"select * from TODO where username = ? AND status = 0", (whose,))
         for row in c:
             self.post(room, prnformat(row))
     
-    def handle_list_everything(self, con, whom, event, args):
+    def handle_list_everything(self, cur, whom, event, args):
         """elif(args[1] == 'list-everything'):"""
-        c = con.cursor()
-        c.execute(u"select * from TODO")
+        cur.execute(u"select * from TODO")
         for row in c:
             self.post(room, prnformat(row))
 
-    def handle_done(self, con, whom, event, args):
+    def handle_done(self, cur, whom, event, args):
         """elif(args[1] == 'done'):"""
         if(args[2].isdigit()):
             id = int(args[2])
-            c = con.cursor()
-            c.execute(u"select (username) from TODO where id = ?", (id,))
+            cur.execute(u"select (username) from TODO where id = ?", (id,))
             usernames = c.fetchone()
             if(usernames == None):
                 self.post(room, "そんな予定はない")
             elif(usernames[0][0] == '@' or usernames[0] == whom):
-                c.execute(u"update TODO set status =1 WHERE id = ?;", (args[2],))
-                c.execute(u"select * from TODO where id = ?", (id,))
+                cur.execute(u"update TODO set status =1 WHERE id = ?;", (args[2],))
+                cur.execute(u"select * from TODO where id = ?", (id,))
                 row = c.fetchone()
                 self.post(room, prnformat(row))
             else:
@@ -186,29 +178,27 @@ class ToDoBot(object):
         else:
             self.post(room, "そもそも予定じゃない")
 
-    def handle_del(self, con, whom, event, args):
+    def handle_del(self, cur, whom, event, args):
         """elif(args[1] == 'del'):"""
         if(args[2].isdigit()):
             id = int(args[2])
-            c = con.cursor()
-            c.execute(u"select (username) from TODO where id = ?", (id,))
+            cur.execute(u"select (username) from TODO where id = ?", (id,))
             usernames = c.fetchone()
             if(usernames == None):
                 self.post(room, "そんな予定はない")
             elif(usernames[0] == '@' or usernames[0] == whom):
-                c.execute(u"delete from TODO WHERE id = ?;", (args[2],))
+                cur.execute(u"delete from TODO WHERE id = ?;", (args[2],))
                 self.post(room, '削除したよ')
             else:
                 self.post(room, "それはお前の予定じゃない")
         else:
             self.post(room, "そもそも予定じゃない")
 
-    def handle_show(self, con, whom, event, args):
+    def handle_show(self, cur, whom, event, args):
         """elif(args[1] == 'show'):"""
         if(args[2].isdigit()):
             id = int(args[2])
-            c = con.cursor()
-            c.execute(u"select * from TODO where id = ?", (id,))
+            cur.execute(u"select * from TODO where id = ?", (id,))
             row = c.fetchone()
             if(row == None):
                 self.post(room, "そんな予定はない")
@@ -217,30 +207,28 @@ class ToDoBot(object):
         else:
             self.post(room, "そもそも予定じゃない")
 
-    def handle_sudodel(self, con, whom, event, args):
+    def handle_sudodel(self, cur, whom, event, args):
         """elif(args[1] == 'sudodel'):"""
         if(args[2].isdigit()):
             if(whom == 'aoisensi'):
                 id = int(args[2])
-                c = con.cursor()
-                c.execute(u"select (username) from TODO where id = ?", (id,))
+                cur.execute(u"select (username) from TODO where id = ?", (id,))
                 usernames = c.fetchone()
                 if(usernames == None):
                     self.post(room, "そんな予定はない")
                 else:
-                    c.execute(u"delete from TODO WHERE id = ?;", (args[2],))
+                    cur.execute(u"delete from TODO WHERE id = ?;", (args[2],))
                     self.post(room, '削除したよ')
             else:
                 self.post(room, 'sudoersに入ってないよ')
         else:
             self.post(room, "そもそも予定じゃない")
 
-    def handle_debug(self, con, whom, event, args):
+    def handle_debug(self, cur, whom, event, args):
         """elif(args[1] == 'debug' """
         if 'aoisensi' == event['message']['speaker_id']:
             if(args[2].isdigit()):
-                c = con.cursor()
-                c.execute(u"select (username) from TODO where id = ?", (int(args[2]),))
+                cur.execute(u"select (username) from TODO where id = ?", (int(args[2]),))
                 print str(c.fetchone())
 
 
