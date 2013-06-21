@@ -240,9 +240,8 @@ else:
     bot = ToDoBot('lion', bot_secret=open('todo.txt').read())
 
 
-def serve_as_cgi():
+def serve_as_cgi(content_length):
     print 'Content-type: text/html\n'
-    content_length = int(os.environ['CONTENT_LENGTH'])
     query = sys.stdin.read(content_length)
     array = json.loads(query)
     events = array['events']
@@ -251,7 +250,18 @@ def serve_as_cgi():
                 
         
 if __name__ == '__main__':
-    serve_as_cgi()
+    if TEST:
+        import sys
+        with open(sys.argv[2], 'w') as fout:
+            with open(sys.argv[1], 'r') as fin:
+                fin.seek(0, os.SEEK_END)
+                count = fin.tell()
+                fin.seek(0, os.SEEK_SET)
+                sys.stdin = fin
+                sys.stdout = fout
+                serve_as_cgi(count)
+    else:
+        serve_as_cgi(int(os.environ['CONTENT_LENGTH']))
 
 
 
