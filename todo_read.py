@@ -35,6 +35,8 @@ class ToDoBot(object):
             self.verifier = hashlib.sha1(bot_id + bot_secret).hexdigest()
         else:
             self.verifier = None
+        self.con = sqlite3.connect('todo.sql', isolation_level=None)
+        self.con.text_factory = str
 
     def post(self, room, text):
         '''
@@ -68,10 +70,8 @@ class ToDoBot(object):
             self.post(room, 'No such command, %s. Please #todo help"'%(args[1],))
             return 
 
-        con = sqlite3.connect('todo.sql', isolation_level=None)
-        con.text_factory = str
 
-        cur = con.cursor()
+        cur = self.con.cursor()
         whom = event['message']['speaker_id']
         
         try:
@@ -82,7 +82,7 @@ class ToDoBot(object):
             print e.message
                     
         finally:
-            con.close()
+            self.con.commit()
 
 
     def handle_help(self, event, args):
