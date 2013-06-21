@@ -130,7 +130,7 @@ class ToDoBot(object):
         """#todo add [description]"""
         text = ' '.join(args[2:])
         cur.execute(u"insert into TODO (username, description, created_at, status) values (?, ?, datetime('now', 'localtime'), 0);", (whom, unicode(text)))
-        id = c.lastrowid
+        id = cur.lastrowid
         cur.execute(u"select * from TODO where id = ?", (id,))
         row = cur.fetchone()
         self.post(room, prnformat(row))
@@ -141,7 +141,7 @@ class ToDoBot(object):
         text = ' '.join(args[3:])
         text += ' (by %s) ' % whom #event['message']['speaker_id']
         cur.execute(u"insert into TODO (username, description, created_at, status) values (?, ?, datetime('now', 'localtime'), 0);", (nickname, unicode(text)))
-        id = c.lastrowid
+        id = cur.lastrowid
         cur.execute(u"select * from TODO where id = ?", (id,))
         row = cur.fetchone()
         self.post(room, prnformat(row))
@@ -273,26 +273,19 @@ class ToDoBot(object):
                 print str(cur.fetchone())
 
 
-TEST = True
-
-if TEST:
-    bot = ToDoBot('lion', bot_secret=None, dbpath='test.sql')
-else:
-    bot = ToDoBot('lion', bot_secret=open('todo.txt').read(), dbpath='todo.sql')
-
-
-def serve_as_cgi(content_length):
-    print 'Content-type: text/html\n'
-    query = sys.stdin.read(content_length)
-    array = json.loads(query)
-    events = array['events']
-    for event in events:
-        bot.handle(event)
+    def serve_as_cgi(self, content_length):
+        print 'Content-type: text/html\n'
+        query = sys.stdin.read(content_length)
+        array = json.loads(query)
+        events = array['events']
+        for event in events:
+            self.handle(event)
                 
         
 if __name__ == '__main__':
-    if TEST:
+    if True:
         import sys
+        bot = ToDoBot('lion', bot_secret=None, dbpath='test.sql')
         with open(sys.argv[2], 'w') as fout:
             with open(sys.argv[1], 'r') as fin:
                 fin.seek(0, os.SEEK_END)
@@ -300,8 +293,9 @@ if __name__ == '__main__':
                 fin.seek(0, os.SEEK_SET)
                 sys.stdin = fin
                 sys.stdout = fout
-                serve_as_cgi(count)
+                bot.serve_as_cgi(count)
     else:
-        serve_as_cgi(int(os.environ['CONTENT_LENGTH']))
+        bot = ToDoBot('lion', bot_secret=open('todo.txt').read(), dbpath='todo.sql')
+        bot.serve_as_cgi(int(os.environ['CONTENT_LENGTH']))
 
 

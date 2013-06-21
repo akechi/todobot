@@ -1,0 +1,9 @@
+{"events":
+    [
+        {"message":
+            {"text":"#todo add test!",
+             "speaker_id":"raa0121",
+             "room":"computer_science"}
+        }
+    ]
+}
