@@ -119,7 +119,7 @@ class ToDoBot(object):
 
     def handle_help(self, event, args):
         """#todo help [command] ... if no command supplied, list all commands."""
-        d = [(k, m.__doc__) for k, m in self.get_handle_XXX()]
+        d = [(k, getattr(m, "__doc__", self.nohelp%(k,))) for k, m in self.get_handle_XXX()]
 
         if len(args) < 2 or args[1] not in d:
             sys.stdout.write(''.join(d.values()) + self.help_postfix)
