@@ -14,7 +14,18 @@ import sqlite3
 
 
 
-TEST = True
+
+def prnformat(row):
+    s = []
+    if(row[4] != 0):
+        s.append('[X]')
+    else:
+        s.append('[_]')
+    s.append("%04d" % row[0])
+    s.append(row[1])
+    s.append(row[2])
+    s.append(row[3])
+    return ' '.join(s)
 
 class ToDoBot(object):
     def __init__(self, bot_id, bot_secret):
@@ -36,44 +47,44 @@ class ToDoBot(object):
         else:
             print >> sys.stderr, room, ":", text
 
-
-if TEST:
-    bot = ToDoBot('lion', bot_secret=None)
-else:
-    bot = ToDoBot('lion', bot_secret=open('todo.txt').read())
-
-
-def prnformat(row):
-    s = []
-    if(row[4] != 0):
-        s.append('[X]')
-    else:
-        s.append('[_]')
-    s.append("%04d" % row[0])
-    s.append(row[1])
-    s.append(row[2])
-    s.append(row[3])
-    return ' '.join(s)
-
-def main():
-    print 'Content-type: text/html\n'
-    content_length = int(os.environ['CONTENT_LENGTH'])
-    query = sys.stdin.read(content_length)
-    array = json.loads(query)
-    events = array['events']
-    for event in events:
+    def handle(self, event):
         args = event['message']['text'].split()
         room = event['message']['room']
-        if(args[0] == '#todo'):
-            try:
-                con = sqlite3.connect('todo.sql', isolation_level=None)
-                con.text_factory=str
+        if args[0]  != '#todo':
+            return
+        if len(args) == 1:
+            self.post(room, 'Please "#todo help"')
+            return
+        
+        command = 'handle_' + args[1].replace('-', '_') #FIXME unsafe!!
+        if '.' in command:
+            self.post(room, 'NO "." in command, please!')
+            return
+
+        method = getattr(self, command, None)
+
+        if method is None:
+            self.post(room, 'No such command, %s. Please #todo help"'%(args[1],))
+            return 
+
+        con = sqlite3.connect('todo.sql', isolation_level=None)
+        con.text_factory = str
+
+        whom = event['message']['speaker_id']
+        
+        try:
+            r = method(con, whom, event, args)
+        except Exception as e:
+            print str(type(e))
+            print str(e.args)
+            print e.message
                     
-                if(len(args) == 1):
-                    bot.post(room, 'Please "#todo help"')
-                    
-                elif(args[1] == 'help'):
-                    sys.stdout.write("""#todo add [description]
+        finally:
+            con.close()
+
+
+    def handle_help(self, event, args):
+        sys.stdout.write("""#todo add [description]
 #todo list
 #todo done [id]
 #todo del [id]
@@ -85,159 +96,174 @@ def main():
 
 このボットはあるふぁばんです
 何があっても知りません""")
-                    
-                elif(args[1] == 'add'):
-                    c = con.cursor()
-                    nickname = event['message']['speaker_id']
-                    text = ' '.join(args[2:])
-                    c.execute(u"insert into TODO (username, description, created_at, status) values (?, ?, datetime('now', 'localtime'), 0);", (nickname, unicode(text)))
-                    id = c.lastrowid
-                    c.execute(u"select * from TODO where id = ?", (id,))
-                    row = c.fetchone()
-                    bot.post(room, prnformat(row))
-                    
-                elif(args[1] == 'addto'):
-                    c = con.cursor()
-                    nickname = args[2]
-                    text = ' '.join(args[3:])
-                    text += ' (by %s) ' % event['message']['speaker_id']
-                    c.execute(u"insert into TODO (username, description, created_at, status) values (?, ?, datetime('now', 'localtime'), 0);", (nickname, unicode(text)))
-                    id = c.lastrowid
-                    c.execute(u"select * from TODO where id = ?", (id,))
-                    row = c.fetchone()
-                    bot.post(room, prnformat(row))
-                    
-                elif(args[1] == 'list-all'):
-                    nickname = event['message']['speaker_id']
-                    c = con.cursor()
-                    c.execute(u"select * from TODO where username = ?", (nickname,))
-                    for row in c:
-                        bot.post(room, prnformat(row))
-                        
-                elif(args[1] == 'list-done'):
-                    nickname = event['message']['speaker_id']
-                    c = con.cursor()
-                    c.execute(u"select * from TODO where username = ? AND status = 1", (nickname,))
-                    for row in c:
-                        bot.post(room, prnformat(row))
-                    
-                elif(args[1] == 'list'):
-                    nickname = event['message']['speaker_id']
-                    c = con.cursor()
-                    c.execute(u"select * from TODO where username = ? AND status = 0", (nickname,))
-                    for row in c:
-                        bot.post(room, prnformat(row))
-                    
-                elif(args[1] == 'listof-all'):
-                    nickname = args[2]
-                    c = con.cursor()
-                    c.execute(u"select * from TODO where username = ?", (nickname,))
-                    for row in c:
-                        bot.post(room, prnformat(row))
-                    
-                elif(args[1] == 'listof-done'):
-                    nickname = args[2]
-                    c = con.cursor()
-                    c.execute(u"select * from TODO where username = ? AND status = 1", (nickname,))
-                    for row in c:
-                        bot.post(room, prnformat(row))
-                    
-                elif(args[1] == 'listof'):
-                    nickname = args[2]
-                    c = con.cursor()
-                    c.execute(u"select * from TODO where username = ? AND status = 0", (nickname,))
-                    for row in c:
-                        bot.post(room, prnformat(row))
-                    
-                elif(args[1] == 'list-everything'):
-                    c = con.cursor()
-                    c.execute(u"select * from TODO")
-                    for row in c:
-                        bot.post(room, prnformat(row))
-                    
-                elif(args[1] == 'done'):
-                    if(args[2].isdigit()):
-                        nickname = event['message']['speaker_id']
-                        id = int(args[2])
-                        c = con.cursor()
-                        c.execute(u"select (username) from TODO where id = ?", (id,))
-                        usernames = c.fetchone()
-                        if(usernames == None):
-                            bot.post(room, "そんな予定はない")
-                        elif(usernames[0][0] == '@' or usernames[0] == nickname):
-                            c.execute(u"update TODO set status =1 WHERE id = ?;", (args[2],))
-                            c.execute(u"select * from TODO where id = ?", (id,))
-                            row = c.fetchone()
-                            bot.post(room, prnformat(row))
-                        else:
-                            bot.post(room, "それはお前の予定じゃない")
-                    else:
-                        bot.post(room, "そもそも予定じゃない")
-                        
-                elif(args[1] == 'del'):
-                    if(args[2].isdigit()):
-                        nickname = event['message']['speaker_id']
-                        id = int(args[2])
-                        c = con.cursor()
-                        c.execute(u"select (username) from TODO where id = ?", (id,))
-                        usernames = c.fetchone()
-                        if(usernames == None):
-                            bot.post(room, "そんな予定はない")
-                        elif(usernames[0] == '@' or usernames[0] == nickname):
-                            c.execute(u"delete from TODO WHERE id = ?;", (args[2],))
-                            bot.post(room, '削除したよ')
-                        else:
-                            bot.post(room, "それはお前の予定じゃない")
-                    else:
-                        bot.post(room, "そもそも予定じゃない")
-                        
-                elif(args[1] == 'show'):
-                    if(args[2].isdigit()):
-                        nickname = event['message']['speaker_id']
-                        id = int(args[2])
-                        c = con.cursor()
-                        c.execute(u"select * from TODO where id = ?", (id,))
-                        row = c.fetchone()
-                        if(row == None):
-                            bot.post(room, "そんな予定はない")
-                        else:
-                            bot.post(room, prnformat(row))
-                    else:
-                        bot.post(room, "そもそも予定じゃない")
-                        
-                elif(args[1] == 'sudodel'):
-                    if(args[2].isdigit()):
-                        nickname = event['message']['speaker_id']
-                        if(nickname == 'aoisensi'):
-                            id = int(args[2])
-                            c = con.cursor()
-                            c.execute(u"select (username) from TODO where id = ?", (id,))
-                            usernames = c.fetchone()
-                            if(usernames == None):
-                                bot.post(room, "そんな予定はない")
-                            else:
-                                c.execute(u"delete from TODO WHERE id = ?;", (args[2],))
-                                bot.post(room, '削除したよ')
-                        else:
-                            bot.post(room, 'sudoersに入ってないよ')
-                    else:
-                        bot.post(room, "そもそも予定じゃない")
-                        
-                elif(args[1] == 'debug' and 'aoisensi' == event['message']['speaker_id'] ):
-                    if(args[2].isdigit()):
-                        nickname = event['message']['speaker_id']
-                        c = con.cursor()
-                        c.execute(u"select (username) from TODO where id = ?", (int(args[2]),))
-                        print str(c.fetchone())
+
+    def handle_add(self, con, whom , event, args):
+        c = con.cursor()
+        text = ' '.join(args[2:])
+        c.execute(u"insert into TODO (username, description, created_at, status) values (?, ?, datetime('now', 'localtime'), 0);", (whom, unicode(text)))
+        id = c.lastrowid
+        c.execute(u"select * from TODO where id = ?", (id,))
+        row = c.fetchone()
+        self.post(room, prnformat(row))
+
+    def handle_addto(self, con, whom, event, args):
+        c = con.cursor()
+        nickname = args[2] #target
+        text = ' '.join(args[3:])
+        text += ' (by %s) ' % whom #event['message']['speaker_id']
+        c.execute(u"insert into TODO (username, description, created_at, status) values (?, ?, datetime('now', 'localtime'), 0);", (nickname, unicode(text)))
+        id = c.lastrowid
+        c.execute(u"select * from TODO where id = ?", (id,))
+        row = c.fetchone()
+        self.post(room, prnformat(row))
+
+    def handle_list_all(self, con, whom, event, args):
+        c = con.cursor()
+        c.execute(u"select * from TODO where username = ?", (whom,))
+        for row in c:
+            self.post(room, prnformat(row))
+
+    def handle_list_done(self, con, whom, event, args):
+        c = con.cursor()
+        c.execute(u"select * from TODO where username = ? AND status = 1", (whom,))
+        for row in c:
+            self.post(room, prnformat(row))
+
+    def handle_list(self, con, whom, event, args):
+        """elif(args[1] == 'list'):"""
+        c = con.cursor()
+        c.execute(u"select * from TODO where username = ? AND status = 0", (whom,))
+        for row in c:
+            self.post(room, prnformat(row))
+
+    def handle_listof_all(self, con, whom, event, args):
+        """elif(args[1] == 'listof-all'):"""
+        whose = args[2]
+        c = con.cursor()
+        c.execute(u"select * from TODO where username = ?", (whose,))
+        for row in c:
+            self.post(room, prnformat(row))
+
+    def handle_listof_done(self, con, whom, event, args):
+        """elif(args[1] == 'listof-done'):"""
+        whose = args[2]
+        c = con.cursor()
+        c.execute(u"select * from TODO where username = ? AND status = 1", (whose,))
+        for row in c:
+            self.post(room, prnformat(row))
+
+    def handle_listof(self, con, whom, event, args):
+        """elif(args[1] == 'listof'):"""
+        whose = args[2]
+        c = con.cursor()
+        c.execute(u"select * from TODO where username = ? AND status = 0", (whose,))
+        for row in c:
+            self.post(room, prnformat(row))
+    
+    def handle_list_everything(self, con, whom, event, args):
+        """elif(args[1] == 'list-everything'):"""
+        c = con.cursor()
+        c.execute(u"select * from TODO")
+        for row in c:
+            self.post(room, prnformat(row))
+
+    def handle_done(self, con, whom, event, args):
+        """elif(args[1] == 'done'):"""
+        if(args[2].isdigit()):
+            id = int(args[2])
+            c = con.cursor()
+            c.execute(u"select (username) from TODO where id = ?", (id,))
+            usernames = c.fetchone()
+            if(usernames == None):
+                self.post(room, "そんな予定はない")
+            elif(usernames[0][0] == '@' or usernames[0] == whom):
+                c.execute(u"update TODO set status =1 WHERE id = ?;", (args[2],))
+                c.execute(u"select * from TODO where id = ?", (id,))
+                row = c.fetchone()
+                self.post(room, prnformat(row))
+            else:
+                self.post(room, "それはお前の予定じゃない")
+        else:
+            self.post(room, "そもそも予定じゃない")
+
+    def handle_del(self, con, whom, event, args):
+        """elif(args[1] == 'del'):"""
+        if(args[2].isdigit()):
+            id = int(args[2])
+            c = con.cursor()
+            c.execute(u"select (username) from TODO where id = ?", (id,))
+            usernames = c.fetchone()
+            if(usernames == None):
+                self.post(room, "そんな予定はない")
+            elif(usernames[0] == '@' or usernames[0] == whom):
+                c.execute(u"delete from TODO WHERE id = ?;", (args[2],))
+                self.post(room, '削除したよ')
+            else:
+                self.post(room, "それはお前の予定じゃない")
+        else:
+            self.post(room, "そもそも予定じゃない")
+
+    def handle_show(self, con, whom, event, args):
+        """elif(args[1] == 'show'):"""
+        if(args[2].isdigit()):
+            id = int(args[2])
+            c = con.cursor()
+            c.execute(u"select * from TODO where id = ?", (id,))
+            row = c.fetchone()
+            if(row == None):
+                self.post(room, "そんな予定はない")
+            else:
+                self.post(room, prnformat(row))
+        else:
+            self.post(room, "そもそも予定じゃない")
+
+    def handle_sudodel(self, con, whom, event, args):
+        """elif(args[1] == 'sudodel'):"""
+        if(args[2].isdigit()):
+            if(whom == 'aoisensi'):
+                id = int(args[2])
+                c = con.cursor()
+                c.execute(u"select (username) from TODO where id = ?", (id,))
+                usernames = c.fetchone()
+                if(usernames == None):
+                    self.post(room, "そんな予定はない")
+                else:
+                    c.execute(u"delete from TODO WHERE id = ?;", (args[2],))
+                    self.post(room, '削除したよ')
+            else:
+                self.post(room, 'sudoersに入ってないよ')
+        else:
+            self.post(room, "そもそも予定じゃない")
+
+    def handle_debug(self, con, whom, event, args):
+        """elif(args[1] == 'debug' """
+        if 'aoisensi' == event['message']['speaker_id']:
+            if(args[2].isdigit()):
+                c = con.cursor()
+                c.execute(u"select (username) from TODO where id = ?", (int(args[2]),))
+                print str(c.fetchone())
+
+
+TEST = True
+
+if TEST:
+    bot = ToDoBot('lion', bot_secret=None)
+else:
+    bot = ToDoBot('lion', bot_secret=open('todo.txt').read())
+
+
+def serve_as_cgi():
+    print 'Content-type: text/html\n'
+    content_length = int(os.environ['CONTENT_LENGTH'])
+    query = sys.stdin.read(content_length)
+    array = json.loads(query)
+    events = array['events']
+    for event in events:
+        bot.handle(event)
                 
-            except Exception as e:
-                print str(type(e))
-                print str(e.args)
-                print e.message
-                    
-            finally:
-                con.close()
         
 if __name__ == '__main__':
-    main()
+    serve_as_cgi()
+
+
 
