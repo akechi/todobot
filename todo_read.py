@@ -57,7 +57,7 @@ class ToDoBot(object):
             params = urllib.urlencode(req)
             r = urllib2.urlopen('http://lingr.com/api/room/say?' + params)
         else:
-            print >> sys.stderr, room, ":", text
+            print >> sys.stdout, room, ":", text
 
     def buffered_post(self, room, text):
         buf = self.buffers.get(room, None)
@@ -84,7 +84,7 @@ class ToDoBot(object):
             self.post(room, 'Please "#todo help"')
             return
         
-        command = prefix + args[1].replace('-', '_') #FIXME unsafe!!
+        command = self.prefix + args[1].replace('-', '_') #FIXME unsafe!!
         if '.' in command:
             self.post(room, 'NO "." in command, please!')
             return
@@ -113,16 +113,16 @@ class ToDoBot(object):
         return nickname in self.adminnick
 
     def get_handle_XXX(self):
-        for k in self.___class__.__dict__:
-            if k.startswith(prefix):
-                yield k, self.getattr(k)
+        for k in self.__class__.__dict__:
+            if k.startswith(self.prefix):
+                yield k, getattr(self, k)
 
-    def handle_help(self, event, args):
+    def handle_help(self, cur, whom, event, args):
         """#todo help [command] ... if no command supplied, list all commands."""
-        d = [(k, getattr(m, "__doc__", self.nohelp%(k,))) for k, m in self.get_handle_XXX()]
+        d = dict([(k, getattr(m, "__doc__", self.nohelp%(k,))) for k, m in self.get_handle_XXX()])
 
         if len(args) < 2 or args[1] not in d:
-            sys.stdout.write(''.join(d.values()) + self.help_postfix)
+            sys.stdout.write('\n'.join(d.values()) + self.help_postfix)
         else:
             sys.stdout.write(d[arg[1]] + self.help_postfix)
 
@@ -163,8 +163,11 @@ class ToDoBot(object):
     def handle_list(self, cur, whom, event, args):
         """#todo list"""
         cur.execute(u"select * from TODO where username = ? AND status = 0", (whom,))
-        for row in cur:
+        i = None
+        for i, row in enumerate(cur):
             self.buffered_post(room, prnformat(row))
+        if i is None:
+            self.buffered_post(room, 'nothing found for %s'%(whom,))
         self.flush_buf(room)
 
     def handle_listof_all(self, cur, whom, event, args):
@@ -273,7 +276,7 @@ class ToDoBot(object):
 TEST = True
 
 if TEST:
-    bot = ToDoBot('lion', bot_secret=None, dbpath='todo.sql')
+    bot = ToDoBot('lion', bot_secret=None, dbpath='test.sql')
 else:
     bot = ToDoBot('lion', bot_secret=open('todo.txt').read(), dbpath='todo.sql')
 
@@ -300,6 +303,5 @@ if __name__ == '__main__':
                 serve_as_cgi(count)
     else:
         serve_as_cgi(int(os.environ['CONTENT_LENGTH']))
-
 
 
