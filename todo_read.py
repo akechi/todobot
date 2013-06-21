@@ -12,14 +12,36 @@ import urllib2
 import hashlib
 import sqlite3
 
-bot_id = 'lion'
-bot_secret = open('todo.txt').read()
-bot_verifier = hashlib.sha1(bot_id + bot_secret).hexdigest()
 
-def post_to_lingr(room, text):
-    req = {'room':room, 'bot':bot_id, 'text':text, 'bot_verifier':bot_verifier}
-    params = urllib.urlencode(req)
-    r = urllib2.urlopen('http://lingr.com/api/room/say?' + params)
+
+TEST = True
+
+class ToDoBot(object):
+    def __init__(self, bot_id, bot_secret):
+        self.bot_id = bot_id
+        if bot_secret:
+            self.verifier = hashlib.sha1(bot_id + bot_secret).hexdigest()
+        else:
+            self.verifier = None
+
+    def post(self, room, text):
+        '''
+            FIXME: return values, timeoout
+
+        '''
+        if self.verifier:
+            req = {'room':room, 'bot':self.bot_id, 'text':text, 'bot_verifier':self.bot_verifier}
+            params = urllib.urlencode(req)
+            r = urllib2.urlopen('http://lingr.com/api/room/say?' + params)
+        else:
+            print >> sys.stderr, room, ":", text
+
+
+if TEST:
+    bot = ToDoBot('lion', bot_secret=None)
+else:
+    bot = ToDoBot('lion', bot_secret=open('todo.txt').read())
+
 
 def prnformat(row):
     s = []
@@ -48,7 +70,7 @@ def main():
                 con.text_factory=str
                     
                 if(len(args) == 1):
-                    post_to_lingr(room, 'Please "#todo help"')
+                    bot.post(room, 'Please "#todo help"')
                     
                 elif(args[1] == 'help'):
                     sys.stdout.write("""#todo add [description]
@@ -72,7 +94,7 @@ def main():
                     id = c.lastrowid
                     c.execute(u"select * from TODO where id = ?", (id,))
                     row = c.fetchone()
-                    post_to_lingr(room, prnformat(row))
+                    bot.post(room, prnformat(row))
                     
                 elif(args[1] == 'addto'):
                     c = con.cursor()
@@ -83,55 +105,55 @@ def main():
                     id = c.lastrowid
                     c.execute(u"select * from TODO where id = ?", (id,))
                     row = c.fetchone()
-                    post_to_lingr(room, prnformat(row))
+                    bot.post(room, prnformat(row))
                     
                 elif(args[1] == 'list-all'):
                     nickname = event['message']['speaker_id']
                     c = con.cursor()
                     c.execute(u"select * from TODO where username = ?", (nickname,))
                     for row in c:
-                        post_to_lingr(room, prnformat(row))
+                        bot.post(room, prnformat(row))
                         
                 elif(args[1] == 'list-done'):
                     nickname = event['message']['speaker_id']
                     c = con.cursor()
                     c.execute(u"select * from TODO where username = ? AND status = 1", (nickname,))
                     for row in c:
-                        post_to_lingr(room, prnformat(row))
+                        bot.post(room, prnformat(row))
                     
                 elif(args[1] == 'list'):
                     nickname = event['message']['speaker_id']
                     c = con.cursor()
                     c.execute(u"select * from TODO where username = ? AND status = 0", (nickname,))
                     for row in c:
-                        post_to_lingr(room, prnformat(row))
+                        bot.post(room, prnformat(row))
                     
                 elif(args[1] == 'listof-all'):
                     nickname = args[2]
                     c = con.cursor()
                     c.execute(u"select * from TODO where username = ?", (nickname,))
                     for row in c:
-                        post_to_lingr(room, prnformat(row))
+                        bot.post(room, prnformat(row))
                     
                 elif(args[1] == 'listof-done'):
                     nickname = args[2]
                     c = con.cursor()
                     c.execute(u"select * from TODO where username = ? AND status = 1", (nickname,))
                     for row in c:
-                        post_to_lingr(room, prnformat(row))
+                        bot.post(room, prnformat(row))
                     
                 elif(args[1] == 'listof'):
                     nickname = args[2]
                     c = con.cursor()
                     c.execute(u"select * from TODO where username = ? AND status = 0", (nickname,))
                     for row in c:
-                        post_to_lingr(room, prnformat(row))
+                        bot.post(room, prnformat(row))
                     
                 elif(args[1] == 'list-everything'):
                     c = con.cursor()
                     c.execute(u"select * from TODO")
                     for row in c:
-                        post_to_lingr(room, prnformat(row))
+                        bot.post(room, prnformat(row))
                     
                 elif(args[1] == 'done'):
                     if(args[2].isdigit()):
@@ -141,16 +163,16 @@ def main():
                         c.execute(u"select (username) from TODO where id = ?", (id,))
                         usernames = c.fetchone()
                         if(usernames == None):
-                            post_to_lingr(room, "そんな予定はない")
+                            bot.post(room, "そんな予定はない")
                         elif(usernames[0][0] == '@' or usernames[0] == nickname):
                             c.execute(u"update TODO set status =1 WHERE id = ?;", (args[2],))
                             c.execute(u"select * from TODO where id = ?", (id,))
                             row = c.fetchone()
-                            post_to_lingr(room, prnformat(row))
+                            bot.post(room, prnformat(row))
                         else:
-                            post_to_lingr(room, "それはお前の予定じゃない")
+                            bot.post(room, "それはお前の予定じゃない")
                     else:
-                        post_to_lingr(room, "そもそも予定じゃない")
+                        bot.post(room, "そもそも予定じゃない")
                         
                 elif(args[1] == 'del'):
                     if(args[2].isdigit()):
@@ -160,14 +182,14 @@ def main():
                         c.execute(u"select (username) from TODO where id = ?", (id,))
                         usernames = c.fetchone()
                         if(usernames == None):
-                            post_to_lingr(room, "そんな予定はない")
+                            bot.post(room, "そんな予定はない")
                         elif(usernames[0] == '@' or usernames[0] == nickname):
                             c.execute(u"delete from TODO WHERE id = ?;", (args[2],))
-                            post_to_lingr(room, '削除したよ')
+                            bot.post(room, '削除したよ')
                         else:
-                            post_to_lingr(room, "それはお前の予定じゃない")
+                            bot.post(room, "それはお前の予定じゃない")
                     else:
-                        post_to_lingr(room, "そもそも予定じゃない")
+                        bot.post(room, "そもそも予定じゃない")
                         
                 elif(args[1] == 'show'):
                     if(args[2].isdigit()):
@@ -177,11 +199,11 @@ def main():
                         c.execute(u"select * from TODO where id = ?", (id,))
                         row = c.fetchone()
                         if(row == None):
-                            post_to_lingr(room, "そんな予定はない")
+                            bot.post(room, "そんな予定はない")
                         else:
-                            post_to_lingr(room, prnformat(row))
+                            bot.post(room, prnformat(row))
                     else:
-                        post_to_lingr(room, "そもそも予定じゃない")
+                        bot.post(room, "そもそも予定じゃない")
                         
                 elif(args[1] == 'sudodel'):
                     if(args[2].isdigit()):
@@ -192,14 +214,14 @@ def main():
                             c.execute(u"select (username) from TODO where id = ?", (id,))
                             usernames = c.fetchone()
                             if(usernames == None):
-                                post_to_lingr(room, "そんな予定はない")
+                                bot.post(room, "そんな予定はない")
                             else:
                                 c.execute(u"delete from TODO WHERE id = ?;", (args[2],))
-                                post_to_lingr(room, '削除したよ')
+                                bot.post(room, '削除したよ')
                         else:
-                            post_to_lingr(room, 'sudoersに入ってないよ')
+                            bot.post(room, 'sudoersに入ってないよ')
                     else:
-                        post_to_lingr(room, "そもそも予定じゃない")
+                        bot.post(room, "そもそも予定じゃない")
                         
                 elif(args[1] == 'debug' and 'aoisensi' == event['message']['speaker_id'] ):
                     if(args[2].isdigit()):
