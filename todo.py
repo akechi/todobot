@@ -57,11 +57,11 @@ class ToDoBot(object):
             params = urllib.urlencode(req)
             r = urllib2.urlopen('http://lingr.com/api/room/say?' + params)
         else:
-            print >> sys.stdout, room, ":", text
+            print >> sys.stdout, text
 
     def buffered_post(self, room, text):
         buf = self.buffers.get(room, None)
-        if buf and sum([len(line) for line in buf]) + text > self.buffering_size:
+        if buf and sum([len(line) + 1 for line in buf]) + len(text) > self.buffering_size:
             self.flush_buf(room)
         buf = self.buffers.get(room, None)
         if buf is None:
@@ -72,7 +72,7 @@ class ToDoBot(object):
     def flush_buf(self, room):
         buf = self.buffers.get(room, None)
         if buf:
-            self.post(room, ''.join(buf))
+            self.post(room, '\n'.join(buf))
             self.buffers[room] = None
 
     def handle(self, event):
@@ -100,7 +100,7 @@ class ToDoBot(object):
         whom = event['message']['speaker_id']
         
         try:
-            r = method(cur, whom, event, args)
+            r = method(cur, room, whom, event, args)
         except Exception as e:
             print str(type(e))
             print str(e.args)
@@ -117,7 +117,7 @@ class ToDoBot(object):
             if k.startswith(self.prefix):
                 yield k, getattr(self, k)
 
-    def handle_help(self, cur, whom, event, args):
+    def handle_help(self, cur, room, whom, event, args):
         """#todo help [command] ... if no command supplied, list all commands."""
         d = dict([(k, getattr(m, "__doc__", self.nohelp%(k,))) for k, m in self.get_handle_XXX()])
 
@@ -126,7 +126,7 @@ class ToDoBot(object):
         else:
             sys.stdout.write(d[arg[1]] + self.help_postfix)
 
-    def handle_add(self, cur, whom , event, args):
+    def handle_add(self, cur, room, whom , event, args):
         """#todo add [description]"""
         text = ' '.join(args[2:])
         cur.execute(u"insert into TODO (username, description, created_at, status) values (?, ?, datetime('now', 'localtime'), 0);", (whom, unicode(text)))
@@ -135,7 +135,7 @@ class ToDoBot(object):
         row = cur.fetchone()
         self.post(room, prnformat(row))
 
-    def handle_addto(self, cur, whom, event, args):
+    def handle_addto(self, cur, room, whom, event, args):
         """#todo addto [nickname] [description]"""
         nickname = args[2] #target
         text = ' '.join(args[3:])
@@ -146,21 +146,21 @@ class ToDoBot(object):
         row = cur.fetchone()
         self.post(room, prnformat(row))
 
-    def handle_list_all(self, cur, whom, event, args):
-        """#todo listof-all [nickname]"""
+    def handle_list_all(self, cur, room, whom, event, args):
+        """#todo list-all"""
         cur.execute(u"select * from TODO where username = ?", (whom,))
         for row in cur:
             self.buffered_post(room, prnformat(row))
         self.flush_buf(room)
 
-    def handle_list_done(self, cur, whom, event, args):
+    def handle_list_done(self, cur, room, whom, event, args):
         """#todo list-done"""
         cur.execute(u"select * from TODO where username = ? AND status = 1", (whom,))
         for row in cur:
             self.buffered_post(room, prnformat(row))
         self.flush_buf(room)
 
-    def handle_list(self, cur, whom, event, args):
+    def handle_list(self, cur, room, whom, event, args):
         """#todo list"""
         cur.execute(u"select * from TODO where username = ? AND status = 0", (whom,))
         i = None
@@ -170,15 +170,15 @@ class ToDoBot(object):
             self.buffered_post(room, 'nothing found for %s'%(whom,))
         self.flush_buf(room)
 
-    def handle_listof_all(self, cur, whom, event, args):
-        """#todo listof-all"""
+    def handle_listof_all(self, cur, room, whom, event, args):
+        """#todo listof-all [nickname]"""
         whose = args[2]
         cur.execute(u"select * from TODO where username = ?", (whose,))
         for row in cur:
             self.buffered_post(room, prnformat(row))
         self.flush_buf(room)
 
-    def handle_listof_done(self, cur, whom, event, args):
+    def handle_listof_done(self, cur, room, whom, event, args):
         """#todo listof-done [nickname]"""
         whose = args[2]
         cur.execute(u"select * from TODO where username = ? AND status = 1", (whose,))
@@ -186,7 +186,7 @@ class ToDoBot(object):
             self.buffered_post(room, prnformat(row))
         self.flush_buf(room)
 
-    def handle_listof(self, cur, whom, event, args):
+    def handle_listof(self, cur, room, whom, event, args):
         """#todo listof [nickname]"""
         whose = args[2]
         cur.execute(u"select * from TODO where username = ? AND status = 0", (whose,))
@@ -194,14 +194,14 @@ class ToDoBot(object):
             self.buffered_post(room, prnformat(row))
         self.flush_buf(room)
     
-    def handle_list_everything(self, cur, whom, event, args):
+    def handle_list_everything(self, cur, room, whom, event, args):
         """#todo list-everything"""
         cur.execute(u"select * from TODO")
         for row in cur:
             self.buffered_post(room, prnformat(row))
         self.flush_buf(room)
 
-    def handle_done(self, cur, whom, event, args):
+    def handle_done(self, cur, room, whom, event, args):
         """#todo done [id]"""
         if(args[2].isdigit()):
             id = int(args[2])
@@ -219,7 +219,7 @@ class ToDoBot(object):
         else:
             self.post(room, "そもそも予定じゃない")
 
-    def handle_del(self, cur, whom, event, args):
+    def handle_del(self, cur, room, whom, event, args):
         """#todo del [id]"""
         if(args[2].isdigit()):
             id = int(args[2])
@@ -235,7 +235,7 @@ class ToDoBot(object):
         else:
             self.post(room, "そもそも予定じゃない")
 
-    def handle_show(self, cur, whom, event, args):
+    def handle_show(self, cur, room, whom, event, args):
         """#todo show [id]"""
         if(args[2].isdigit()):
             id = int(args[2])
@@ -248,7 +248,7 @@ class ToDoBot(object):
         else:
             self.post(room, "そもそも予定じゃない")
 
-    def handle_sudodel(self, cur, whom, event, args):
+    def handle_sudodel(self, cur, room, whom, event, args):
         """#todo sudodel [id]"""
         if(args[2].isdigit()):
             if self.is_admin(whom):
@@ -265,7 +265,7 @@ class ToDoBot(object):
         else:
             self.post(room, "そもそも予定じゃない")
 
-    def handle_debug(self, cur, whom, event, args):
+    def handle_debug(self, cur, room, whom, event, args):
         """#todo debug [id]"""
         if self.is_admin(whom):
             if(args[2].isdigit()):
@@ -283,19 +283,7 @@ class ToDoBot(object):
                 
         
 if __name__ == '__main__':
-    if True:
-        import sys
-        bot = ToDoBot('lion', bot_secret=None, dbpath='test.sql')
-        with open(sys.argv[2], 'w') as fout:
-            with open(sys.argv[1], 'r') as fin:
-                fin.seek(0, os.SEEK_END)
-                count = fin.tell()
-                fin.seek(0, os.SEEK_SET)
-                sys.stdin = fin
-                sys.stdout = fout
-                bot.serve_as_cgi(count)
-    else:
-        bot = ToDoBot('lion', bot_secret=open('todo.txt').read(), dbpath='todo.sql')
-        bot.serve_as_cgi(int(os.environ['CONTENT_LENGTH']))
+    bot = ToDoBot('lion', bot_secret=open('todo.txt').read(), dbpath='todo.sqlite')
+    bot.serve_as_cgi(int(os.environ['CONTENT_LENGTH']))
 
 
