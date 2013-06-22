@@ -3,7 +3,7 @@
 from todo import ToDoBot
 import unittest
 
-from StringIO import StringIO
+from io import StringIO
 import sys
 
 class ToDoBotTestCase(unittest.TestCase):
@@ -13,18 +13,18 @@ class ToDoBotTestCase(unittest.TestCase):
         c.execute(open('todo_schema.sql').read())
         self.bot.con.commit()
 
-        c.execute(u"insert into TODO (username, description, created_at, status) values (?, ?, datetime('now', 'localtime'), 0);", ('raa0121', unicode('test data 1')))
-        c.execute(u"insert into TODO (username, description, created_at, status) values (?, ?, datetime('now', 'localtime'), 0);", ('raa0121', unicode('test data 2')))
-        c.execute(u"insert into TODO (username, description, created_at, status) values (?, ?, datetime('now', 'localtime'), 1);", ('raa0121', unicode('test data 3')))
-        c.execute(u"insert into TODO (username, description, created_at, status) values (?, ?, datetime('now', 'localtime'), 0);", ('bgnori', unicode('test data 4')))
-        c.execute(u"insert into TODO (username, description, created_at, status) values (?, ?, datetime('now', 'localtime'), 1);", ('bgnori', unicode('test data 5')))
+        c.execute("insert into TODO (username, description, created_at, status) values (?, ?, datetime('now', 'localtime'), 0);", ('raa0121', str('test data 1')))
+        c.execute("insert into TODO (username, description, created_at, status) values (?, ?, datetime('now', 'localtime'), 0);", ('raa0121', str('test data 2')))
+        c.execute("insert into TODO (username, description, created_at, status) values (?, ?, datetime('now', 'localtime'), 1);", ('raa0121', str('test data 3')))
+        c.execute("insert into TODO (username, description, created_at, status) values (?, ?, datetime('now', 'localtime'), 0);", ('bgnori', str('test data 4')))
+        c.execute("insert into TODO (username, description, created_at, status) values (?, ?, datetime('now', 'localtime'), 1);", ('bgnori', str('test data 5')))
         self.bot.con.commit()
 
-        c.execute(u"select * from TODO where username = ? AND status = 0", ('raa0121',))
+        c.execute("select * from TODO where username = ? AND status = 0", ('raa0121',))
         i = None
         for i, r in enumerate(c):
             self.assertEqual('raa0121', r[1])
-        self.assertEquals(1, i)
+        self.assertEqual(1, i)
 
         sys.stdout = StringIO()
 
@@ -64,7 +64,7 @@ class ToDoBotTestCase(unittest.TestCase):
         v = sys.stdout.getvalue()
         self.assertTrue(v.startswith('Content-type: text/html\n'))
         c = self.bot.con.cursor()
-        c.execute(u"select * from TODO where username = ? AND status = 0", ('raa0121',))
+        c.execute("select * from TODO where username = ? AND status = 0", ('raa0121',))
         self.assertEquals(3, len([r for r in c]))
 
 
@@ -75,10 +75,10 @@ class ToDoBotTestCase(unittest.TestCase):
         v = sys.stdout.getvalue()
         self.assertTrue(v.startswith('Content-type: text/html\n'))
         c = self.bot.con.cursor()
-        c.execute(u"select * from TODO where username = ? AND status = 0", ('raa0121',))
+        c.execute("select * from TODO where username = ? AND status = 0", ('raa0121',))
         self.assertEquals(2, len([r for r in c]))
         c = self.bot.con.cursor()
-        c.execute(u"select * from TODO where username = ? AND status = 0", ('bgnori',))
+        c.execute("select * from TODO where username = ? AND status = 0", ('bgnori',))
         self.assertEquals(2, len([r for r in c]))
 
 
@@ -173,10 +173,10 @@ class ToDoBotTestCase(unittest.TestCase):
         self.assertTrue(v.startswith('Content-type: text/html\n'))
 
         c = self.bot.con.cursor()
-        c.execute(u"select * from TODO where username = ? AND status = 0", ('raa0121',))
+        c.execute("select * from TODO where username = ? AND status = 0", ('raa0121',))
         self.assertEquals(1, len([r for r in c]))
         c = self.bot.con.cursor()
-        c.execute(u"select * from TODO where username = ? AND status = 0", ('bgnori',))
+        c.execute("select * from TODO where username = ? AND status = 0", ('bgnori',))
         self.assertEquals(1, len([r for r in c]))
 
 
