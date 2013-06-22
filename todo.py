@@ -286,7 +286,7 @@ class ToDoBot(object):
                 
         
 if __name__ == '__main__':
-    bot = ToDoBot('lion', bot_secret=open('todo.txt').read(), dbpath='todo.sqlite')
+    bot = ToDoBot(b'lion', bot_secret=open('todo.txt', mode='rb').read(), dbpath='todo.sqlite')
     bot.serve_as_cgi(int(os.environ['CONTENT_LENGTH']))
 
 
