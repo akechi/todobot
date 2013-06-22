@@ -84,7 +84,7 @@ class ToDoBot(object):
             self.post(room, 'Please "#todo help"')
             return
         
-        command = self.make_handler_name(arg[1])
+        command = self.make_handler_name(args[1])
         if '.' in command:
             self.post(room, 'NO "." in command, please!')
             return

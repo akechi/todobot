@@ -1,6 +1,6 @@
 
 
-from todo_read import ToDoBot
+from todo import ToDoBot
 import unittest
 
 from StringIO import StringIO
