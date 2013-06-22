@@ -31,7 +31,7 @@ def prnformat(row):
 
 class ToDoBot(object):
     nohelp = "*** No help on %s"
-    help_postfix = """このボットはあるふぁばんです\r\n何があっても知りません"""
+    help_postfix = """\r\nこのボットはあるふぁばんです\r\n何があっても知りません"""
     prefix = 'handle_'
     adminnicks = set(['aoisensi'])
 
@@ -84,7 +84,7 @@ class ToDoBot(object):
             self.post(room, 'Please "#todo help"')
             return
         
-        command = self.prefix + args[1].replace('-', '_') #FIXME unsafe!!
+        command = self.make_handler_name(arg[1])
         if '.' in command:
             self.post(room, 'NO "." in command, please!')
             return
@@ -112,6 +112,9 @@ class ToDoBot(object):
     def is_admin(self, nickname):
         return nickname in self.adminnick
 
+    def make_handler_name(self, s):
+        return self.prefix + s.replace('-', '_') #FIXME unsafe!!
+
     def get_handle_XXX(self):
         for k in self.__class__.__dict__:
             if k.startswith(self.prefix):
@@ -121,10 +124,10 @@ class ToDoBot(object):
         """#todo help [command] ... if no command supplied, list all commands."""
         d = dict([(k, getattr(m, "__doc__", self.nohelp%(k,))) for k, m in self.get_handle_XXX()])
 
-        if len(args) < 2 or args[1] not in d:
-            sys.stdout.write('\n'.join(d.values()) + self.help_postfix)
+        if len(args) == 3 and self.make_handler_name(args[2]) in d:
+            sys.stdout.write(d[self.make_handler_name(arg[2])] + self.help_postfix)
         else:
-            sys.stdout.write(d[arg[1]] + self.help_postfix)
+            sys.stdout.write('\n'.join(d.values()) + self.help_postfix)
 
     def handle_add(self, cur, room, whom , event, args):
         """#todo add [description]"""

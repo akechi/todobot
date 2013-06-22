@@ -28,6 +28,15 @@ class ToDoBotTestCase(unittest.TestCase):
 
         sys.stdout = StringIO()
 
+    def test_get_handle_XXX(self):
+        bot = self.bot
+        d = dict([(k, getattr(m, "__doc__", bot.nohelp%(k,))) for k, m in bot.get_handle_XXX()])
+
+        self.assertIn('handle_done', d)
+        self.assertIn('handle_help', d)
+        self.assertEqual("""#todo done [id]""", d['handle_done'])
+
+
     def test_help(self):
         req = """{"events":[{"message":{"text":"#todo help","speaker_id":"raa0121","room":"computer_science"}}]}"""
         sys.stdin = StringIO(req)
@@ -35,7 +44,18 @@ class ToDoBotTestCase(unittest.TestCase):
         v = sys.stdout.getvalue()
         self.assertTrue(v.startswith('Content-type: text/html\n'))
         xs = v.splitlines()
-        self.assertTrue('#todo show [id]' in xs)
+        self.assertIn('#todo done [id]', xs)
+        self.assertIn('#todo show [id]', xs)
+
+    def test_help_arg(self):
+        req = """{"events":[{"message":{"text":"#todo help done","speaker_id":"raa0121","room":"computer_science"}}]}"""
+        sys.stdin = StringIO(req)
+        self.bot.serve_as_cgi(len(req))
+        v = sys.stdout.getvalue()
+        self.assertTrue(v.startswith('Content-type: text/html\n'))
+        xs = v.splitlines()
+        self.assertIn('#todo done [id]', xs)
+        self.assertNotIn('#todo show [id]', xs)
 
     def test_add(self):
         req = """{"events":[{"message":{"text":"#todo add test_add","speaker_id":"raa0121","room":"computer_science"}}]}"""
