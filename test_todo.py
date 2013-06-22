@@ -10,7 +10,8 @@ class ToDoBotTestCase(unittest.TestCase):
     def setUp(self):
         self.bot = ToDoBot('lion', bot_secret=None, dbpath=':memory:')
         c = self.bot.con.cursor()
-        c.execute(open('todo_schema.sql').read())
+        with open('todo_schema.sql') as f:
+            c.execute(f.read())
         self.bot.con.commit()
 
         c.execute("insert into TODO (username, description, created_at, status) values (?, ?, datetime('now', 'localtime'), 0);", ('raa0121', str('test data 1')))
@@ -76,10 +77,10 @@ class ToDoBotTestCase(unittest.TestCase):
         self.assertTrue(v.startswith('Content-type: text/html\n'))
         c = self.bot.con.cursor()
         c.execute("select * from TODO where username = ? AND status = 0", ('raa0121',))
-        self.assertEquals(2, len([r for r in c]))
+        self.assertEqual(2, len([r for r in c]))
         c = self.bot.con.cursor()
         c.execute("select * from TODO where username = ? AND status = 0", ('bgnori',))
-        self.assertEquals(2, len([r for r in c]))
+        self.assertEqual(2, len([r for r in c]))
 
 
     def test_list_all(self):
@@ -89,8 +90,8 @@ class ToDoBotTestCase(unittest.TestCase):
         v = sys.stdout.getvalue()
         self.assertTrue(v.startswith('Content-type: text/html\n'))
         xs = v.splitlines()
-        self.assertEquals(2, len([x for x in xs if x.startswith('[_]')]))
-        self.assertEquals(1, len([x for x in xs if x.startswith('[X]')]))
+        self.assertEqual(2, len([x for x in xs if x.startswith('[_]')]))
+        self.assertEqual(1, len([x for x in xs if x.startswith('[X]')]))
 
 
     def test_list_done(self):
@@ -100,8 +101,8 @@ class ToDoBotTestCase(unittest.TestCase):
         v = sys.stdout.getvalue()
         self.assertTrue(v.startswith('Content-type: text/html\n'))
         xs = v.splitlines()
-        self.assertEquals(0, len([x for x in xs if x.startswith('[_]')]))
-        self.assertEquals(1, len([x for x in xs if x.startswith('[X]')]))
+        self.assertEqual(0, len([x for x in xs if x.startswith('[_]')]))
+        self.assertEqual(1, len([x for x in xs if x.startswith('[X]')]))
 
     def test_list(self):
         req = """{"events":[{"message":{"text":"#todo list","speaker_id":"raa0121","room":"computer_science"}}]}"""
@@ -110,8 +111,8 @@ class ToDoBotTestCase(unittest.TestCase):
         v = sys.stdout.getvalue()
         self.assertTrue(v.startswith('Content-type: text/html\n'))
         xs = v.splitlines()
-        self.assertEquals(2, len([x for x in xs if x.startswith('[_]')]))
-        self.assertEquals(0, len([x for x in xs if x.startswith('[X]')]))
+        self.assertEqual(2, len([x for x in xs if x.startswith('[_]')]))
+        self.assertEqual(0, len([x for x in xs if x.startswith('[X]')]))
 
 
     def test_listof_all(self):
@@ -121,7 +122,7 @@ class ToDoBotTestCase(unittest.TestCase):
         v = sys.stdout.getvalue()
         self.assertTrue(v.startswith('Content-type: text/html\n'))
         xs = v.splitlines()
-        self.assertEquals(1, len([x for x in xs if x.startswith('[_]')]))
+        self.assertEqual(1, len([x for x in xs if x.startswith('[_]')]))
 
 
 
@@ -133,7 +134,7 @@ class ToDoBotTestCase(unittest.TestCase):
         self.assertTrue(v.startswith('Content-type: text/html\n'))
         ''' need some assertions '''
         xs = v.splitlines()
-        self.assertEquals(1, len([x for x in xs if x.startswith('[X]')]))
+        self.assertEqual(1, len([x for x in xs if x.startswith('[X]')]))
 
     def test_listof(self):
         req = """{"events":[{"message":{"text":"#todo listof bgnori","speaker_id":"raa0121","room":"computer_science"}}]}"""
@@ -142,7 +143,7 @@ class ToDoBotTestCase(unittest.TestCase):
         v = sys.stdout.getvalue()
         self.assertTrue(v.startswith('Content-type: text/html\n'))
         xs = v.splitlines()
-        self.assertEquals(1, len([x for x in xs if x.startswith('[_]')]))
+        self.assertEqual(1, len([x for x in xs if x.startswith('[_]')]))
 
 
     def test_list_everything(self):
@@ -152,8 +153,8 @@ class ToDoBotTestCase(unittest.TestCase):
         v = sys.stdout.getvalue()
         self.assertTrue(v.startswith('Content-type: text/html\n'))
         xs = v.splitlines()
-        self.assertEquals(3, len([x for x in xs if x.startswith('[_]')]))
-        self.assertEquals(2, len([x for x in xs if x.startswith('[X]')]))
+        self.assertEqual(3, len([x for x in xs if x.startswith('[_]')]))
+        self.assertEqual(2, len([x for x in xs if x.startswith('[X]')]))
 
     def test_done(self):
         req = """{"events":[{"message":{"text":"#todo done 1","speaker_id":"raa0121","room":"computer_science"}}]}"""
@@ -162,8 +163,8 @@ class ToDoBotTestCase(unittest.TestCase):
         v = sys.stdout.getvalue()
         self.assertTrue(v.startswith('Content-type: text/html\n'))
         xs = v.splitlines()
-        self.assertEquals(0, len([x for x in xs if x.startswith('[_]')]))
-        self.assertEquals(1, len([x for x in xs if x.startswith('[X]')]))
+        self.assertEqual(0, len([x for x in xs if x.startswith('[_]')]))
+        self.assertEqual(1, len([x for x in xs if x.startswith('[X]')]))
 
     def test_del(self):
         req = """{"events":[{"message":{"text":"#todo del 2","speaker_id":"raa0121","room":"computer_science"}}]}"""
@@ -174,10 +175,10 @@ class ToDoBotTestCase(unittest.TestCase):
 
         c = self.bot.con.cursor()
         c.execute("select * from TODO where username = ? AND status = 0", ('raa0121',))
-        self.assertEquals(1, len([r for r in c]))
+        self.assertEqual(1, len([r for r in c]))
         c = self.bot.con.cursor()
         c.execute("select * from TODO where username = ? AND status = 0", ('bgnori',))
-        self.assertEquals(1, len([r for r in c]))
+        self.assertEqual(1, len([r for r in c]))
 
 
     def test_show(self):
@@ -189,8 +190,8 @@ class ToDoBotTestCase(unittest.TestCase):
         ''' need some assertions '''
 
         xs = v.splitlines()
-        self.assertEquals(1, len([x for x in xs if x.startswith('[X]')]))
-        self.assertEquals(0, len([x for x in xs if x.startswith('[_]')]))
+        self.assertEqual(1, len([x for x in xs if x.startswith('[X]')]))
+        self.assertEqual(0, len([x for x in xs if x.startswith('[_]')]))
 
     def test_about(self):
         req = """{"events":[{"message":{"text":"#todo about","speaker_id":"raa0121","room":"computer_science"}}]}"""
