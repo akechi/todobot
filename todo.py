@@ -278,7 +278,8 @@ class ToDoBot(object):
 
     def handle_about(self, cur, room, whom, event, args):
         """#todo about"""
-        self.buffered_post(room, "To Do Bot "+gitsha1.Id)
+        self.buffered_post(room, "To Do Bot ")
+        self.buffered_post(room, gitsha1.Id + ' on ' + sys.version)
         self.buffered_post(room, "It provides task management feature to lingr room.")
         self.buffered_post(room, "see https://github.com/akechi/todobot")
         self.flush_buf(room)
