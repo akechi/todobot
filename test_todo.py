@@ -65,7 +65,7 @@ class ToDoBotTestCase(unittest.TestCase):
         self.assertTrue(v.startswith('Content-type: text/html\n'))
         c = self.bot.con.cursor()
         c.execute("select * from TODO where username = ? AND status = 0", ('raa0121',))
-        self.assertEquals(3, len([r for r in c]))
+        self.assertEqual(3, len([r for r in c]))
 
 
     def test_addto(self):
@@ -191,6 +191,18 @@ class ToDoBotTestCase(unittest.TestCase):
         xs = v.splitlines()
         self.assertEquals(1, len([x for x in xs if x.startswith('[X]')]))
         self.assertEquals(0, len([x for x in xs if x.startswith('[_]')]))
+
+    def test_about(self):
+        req = """{"events":[{"message":{"text":"#todo about","speaker_id":"raa0121","room":"computer_science"}}]}"""
+        sys.stdin = StringIO(req)
+        self.bot.serve_as_cgi(len(req))
+        v = sys.stdout.getvalue()
+        self.assertTrue(v.startswith('Content-type: text/html\n'))
+        ''' need some assertions '''
+
+        xs = v.splitlines()
+        self.assertIn("It provides task management feature to lingr room.", xs)
+        self.assertIn("see https://github.com/akechi/todobot", xs)
 
 if __name__ == '__main__':
     unittest.main()

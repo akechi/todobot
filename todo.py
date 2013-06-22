@@ -12,6 +12,7 @@ import urllib.request, urllib.error, urllib.parse
 import hashlib
 import sqlite3
 
+import gitsha1
 
 
 
@@ -274,6 +275,13 @@ class ToDoBot(object):
             if(args[2].isdigit()):
                 cur.execute("select (username) from TODO where id = ?", (int(args[2]),))
                 print(str(cur.fetchone()))
+
+    def handle_about(self, cur, room, whom, event, args):
+        """#todo about"""
+        self.buffered_post(room, "To Do Bot "+gitsha1.Id)
+        self.buffered_post(room, "It provides task management feature to lingr room.")
+        self.buffered_post(room, "see https://github.com/akechi/todobot")
+        self.flush_buf(room)
 
 
     def serve_as_cgi(self, content_length):
