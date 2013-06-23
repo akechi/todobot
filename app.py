@@ -2,10 +2,11 @@
 # -*- coding: utf-8 -*-
 
 
-
 from todo import ToDoBot
-
 from flask import Flask, request
+from flask import json
+
+
 
 app = Flask(__name__)
 
@@ -15,7 +16,13 @@ class Flasky(ToDoBot):
     ''' UGH, buffer is not thread safe!!'''
     def lingrbot(self):
         if request.method == 'POST':
-            return [self.handle(event) for event in request.json['events']]
+            text = request.data
+            array = json.loads(text)
+            for event in array['events']:
+                s = self.handle(event) 
+                for t in s.render_as_text(500):
+                    self.post(s.room, t)
+            return ''
         else:
             return 'hello! ' #self.handle_about(None, None, None, None, None)
 
