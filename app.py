@@ -1,16 +1,10 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
-
 from todo import ToDoBot
 from flask import Flask, request
 from flask import json
 
-
-
-app = Flask(__name__)
-
-app.debug = True
 
 class Flasky(ToDoBot):
     ''' UGH, buffer is not thread safe!!'''
@@ -28,13 +22,19 @@ class Flasky(ToDoBot):
 
 
 if __name__ == '__main__':
+    import sys
     from sqlalchemy import create_engine
     from sqlalchemy.pool import QueuePool
     # maybe poolclass=SingletonThreadPool
 
+    app = Flask(__name__)
+    if len(sys.argv) > 1 and sys.argv[1] == 'debug':
+        app.debug = True
     engine = create_engine('sqlite:///./todo.sqlite', poolclass=QueuePool)
-    #bot = Flasky(b'lion', bot_secret=open('todo.txt', mode='rb').read(), engine=engine)
-    bot = Flasky(b'lion', bot_secret=None, engine=engine)
+    if app.debug:
+        bot = Flasky(b'lion', bot_secret=None, engine=engine)
+    else:
+        bot = Flasky(b'lion', bot_secret=open('todo.txt', mode='rb').read(), engine=engine)
     app.route('/lingrbot', methods=['GET', 'POST'])(bot.lingrbot)
     app.run()
 
