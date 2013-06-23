@@ -4,6 +4,10 @@
 test:
 	python3.3 test_todo.py 
 
-help:
-	python3.3 todo.py tests/help-in.json help-out.txt
+setuppip:
+	./setup.sh
+
+update:
+	./py3.3/bin/pip install -r freeze.txt
+
 
