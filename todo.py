@@ -83,6 +83,7 @@ class ToDoBot(object):
             req = {'room':room, 'bot':self.bot_id, 'text':text, 'bot_verifier':self.verifier}
             params = urllib.parse.urlencode(req)
             r = urllib.request.urlopen('http://lingr.com/api/room/say?' + params)
+            #print(r.read(), sys.stderr)
         else:
             print(text, file=sys.stdout)
 

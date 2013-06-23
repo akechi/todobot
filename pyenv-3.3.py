@@ -2,6 +2,7 @@
 
 if __name__ == '__main__':
     import sys
+    print(sys.version)
     rc = 1
     try:
         import venv
