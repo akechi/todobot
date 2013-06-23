@@ -11,13 +11,9 @@ import urllib.request, urllib.parse, urllib.error
 import urllib.request, urllib.error, urllib.parse
 import hashlib
 
-
-from sqlalchemy import create_engine
-from sqlalchemy.pool import QueuePool
-
-# maybe poolclass=SingletonThreadPool
-
 import gitsha1
+
+
 
 
 
@@ -34,6 +30,33 @@ def prnformat(row):
     return ' '.join(s)
 
 
+class Spool(object):
+    buffering_size = 500 #byte
+
+    def __init__(self, room):
+        self.room = room
+        self.rows = []
+        self.text = ''
+
+    def add(self, row):
+        self.rows.append(row)
+
+    def write(self, s):
+        self.text += s
+
+    def render_as_text(self, size):
+        if self.rows:
+            buf = []
+            for next in self.rows:
+                next = prnformat(next)
+                if buf and sum([len(line) + 1 for line in buf]) + len(next) > size:
+                    yield '\n'.join(buf)
+                    buf = []
+                buf.append(next)
+            yield '\n'.join(buf)
+        else:
+            yield self.text
+
 
 class ToDoBot(object):
     nohelp = "*** No help on %s"
@@ -41,7 +64,6 @@ class ToDoBot(object):
     prefix = 'handle_'
     adminnicks = set(['aoisensi'])
 
-    buffering_size = 500 #byte
 
     def __init__(self, bot_id, bot_secret, engine):
         self.bot_id = bot_id
@@ -51,7 +73,6 @@ class ToDoBot(object):
             self.verifier = None
         self.engine = engine 
         #self.con.text_factory = str
-        self.buffers = {}
 
     def post(self, room, text):
         '''
@@ -65,46 +86,34 @@ class ToDoBot(object):
         else:
             print(text, file=sys.stdout)
 
-    def buffered_post(self, room, text):
-        buf = self.buffers.get(room, None)
-        if buf and sum([len(line) + 1 for line in buf]) + len(text) > self.buffering_size:
-            self.flush_buf(room)
-        buf = self.buffers.get(room, None)
-        if buf is None:
-            buf = []
-        buf.append(text)
-        self.buffers[room] = buf
-
-    def flush_buf(self, room):
-        buf = self.buffers.get(room, None)
-        if buf:
-            self.post(room, '\n'.join(buf))
-            self.buffers[room] = None
-
     def handle(self, event):
         args = event['message']['text'].split()
         room = event['message']['room']
+        spool = Spool(room)
+
         if args[0]  != '#todo':
-            return
+            return spool
+
         if len(args) == 1:
-            self.post(room, 'Please "#todo help"')
-            return
+            spool.write('Please "#todo help"')
+            return spool
         
         command = self.make_handler_name(args[1])
         if '.' in command:
-            self.post(room, 'NO "." in command, please!')
-            return
+            spool.write('NO "." in command, please!')
+            return spool
 
         method = getattr(self, command, None)
 
         if method is None:
-            self.post(room, 'No such command, %s. Please #todo help"'%(args[1],))
-            return 
+            spool.write('No such command, %s. Please #todo help"'%(args[1],))
+            return spool
 
         whom = event['message']['speaker_id']
         
         with self.engine.connect() as conn:
-            r = method(conn, room, whom, event, args)
+            return method(spool, conn, room, whom, event, args)
+
 
     def is_admin(self, nickname):
         return nickname in self.adminnick
@@ -117,25 +126,27 @@ class ToDoBot(object):
             if k.startswith(self.prefix):
                 yield k, getattr(self, k)
 
-    def handle_help(self, conn, room, whom, event, args):
+    def handle_help(self, spool, conn, room, whom, event, args):
         """#todo help [command] ... if no command supplied, list all commands."""
         d = dict([(k, getattr(m, "__doc__", self.nohelp%(k,))) for k, m in self.get_handle_XXX()])
 
         if len(args) == 3 and self.make_handler_name(args[2]) in d:
-            sys.stdout.write(d[self.make_handler_name(args[2])] + self.help_postfix)
+            spool.write(d[self.make_handler_name(args[2])] + self.help_postfix)
         else:
-            sys.stdout.write('\n'.join(list(d.values())) + self.help_postfix)
+            spool.write('\n'.join(list(d.values())) + self.help_postfix)
+        return spool
 
-    def handle_add(self, conn, room, whom , event, args):
+    def handle_add(self, spool, conn, room, whom , event, args):
         """#todo add [description]"""
         text = ' '.join(args[2:])
         result = conn.execute("insert into TODO (username, description, created_at, status) values (?, ?, datetime('now', 'localtime'), 0);", (whom, str(text)))
         id = result.lastrowid
         result = conn.execute("select * from TODO where id = ?", (id,))
         row = result.fetchone()
-        self.post(room, prnformat(row))
+        spool.add(row)
+        return spool
 
-    def handle_addto(self, conn, room, whom, event, args):
+    def handle_addto(self, spool, conn, room, whom, event, args):
         """#todo addto [nickname] [description]"""
         nickname = args[2] #target
         text = ' '.join(args[3:])
@@ -143,106 +154,108 @@ class ToDoBot(object):
         result = conn.execute("insert into TODO (username, description, created_at, status) values (?, ?, datetime('now', 'localtime'), 0);", (nickname, str(text)))
         id = result.lastrowid
         result = conn.execute("select * from TODO where id = ?", (id,))
-        row = result.fetchone()
-        self.post(room, prnformat(row))
+        spool.add(result.fetchone())
+        return spool
 
-    def handle_list_all(self, conn, room, whom, event, args):
+    def handle_list_all(self, spool, conn, room, whom, event, args):
         """#todo list-all"""
         for row in conn.execute("select * from TODO where username = ?", (whom,)):
-            self.buffered_post(room, prnformat(row))
-        self.flush_buf(room)
+            spool.add(row)
+        return spool
 
-    def handle_list_done(self, conn, room, whom, event, args):
+    def handle_list_done(self, spool, conn, room, whom, event, args):
         """#todo list-done"""
         for row in conn.execute("select * from TODO where username = ? AND status = 1", (whom,)):
-            self.buffered_post(room, prnformat(row))
-        self.flush_buf(room)
+            spool.add(row)
+        return spool
 
-    def handle_list(self, conn, room, whom, event, args):
+    def handle_list(self, spool, conn, room, whom, event, args):
         """#todo list"""
         result = conn.execute("select * from TODO where username = ? AND status = 0", (whom,))
         i = None
         for i, row in enumerate(result):
-            self.buffered_post(room, prnformat(row))
+            spool.add(row)
         if i is None:
-            self.buffered_post(room, 'nothing found for %s'%(whom,))
-        self.flush_buf(room)
+            spool.write('nothing found for %s'%(whom,))
+        return spool
 
-    def handle_listof_all(self, conn, room, whom, event, args):
+    def handle_listof_all(self, spool, conn, room, whom, event, args):
         """#todo listof-all [nickname]"""
         whose = args[2]
         for row in conn.execute("select * from TODO where username = ?", (whose,)):
-            self.buffered_post(room, prnformat(row))
-        self.flush_buf(room)
+            spool.add(row)
+        return spool
 
-    def handle_listof_done(self, conn, room, whom, event, args):
+    def handle_listof_done(self, spool, conn, room, whom, event, args):
         """#todo listof-done [nickname]"""
         whose = args[2]
         for row in conn.execute("select * from TODO where username = ? AND status = 1", (whose,)):
-            self.buffered_post(room, prnformat(row))
-        self.flush_buf(room)
+            spool.add(row)
+        return spool
 
-    def handle_listof(self, conn, room, whom, event, args):
+    def handle_listof(self, spool, conn, room, whom, event, args):
         """#todo listof [nickname]"""
         whose = args[2]
         for row in conn.execute("select * from TODO where username = ? AND status = 0", (whose,)):
-            self.buffered_post(room, prnformat(row))
-        self.flush_buf(room)
+            spool.add(row)
+        return spool
     
-    def handle_list_everything(self, conn, room, whom, event, args):
+    def handle_list_everything(self, spool, conn, room, whom, event, args):
         """#todo list-everything"""
         for row in conn.execute("select * from TODO"):
-            self.buffered_post(room, prnformat(row))
-        self.flush_buf(room)
+            spool.add(row)
+        return spool
 
-    def handle_done(self, conn, room, whom, event, args):
+    def handle_done(self, spool, conn, room, whom, event, args):
         """#todo done [id]"""
         if(args[2].isdigit()):
             id = int(args[2])
             result = conn.execute("select (username) from TODO where id = ?", (id,))
             usernames = result.fetchone()
             if(usernames == None):
-                self.post(room, "そんな予定はない")
+                spool.write("そんな予定はない")
             elif(usernames[0][0] == '@' or usernames[0] == whom):
                 conn.execute("update TODO set status =1 WHERE id = ?;", (args[2],))
                 result = conn.execute("select * from TODO where id = ?", (id,))
-                row = result.fetchone()
-                self.post(room, prnformat(row))
+                spool.add(result.fetchone())
             else:
-                self.post(room, "それはお前の予定じゃない")
+                spool.write("それはお前の予定じゃない")
         else:
-            self.post(room, "そもそも予定じゃない")
+            spool.write("そもそも予定じゃない")
+        return spool
 
-    def handle_del(self, conn, room, whom, event, args):
+    def handle_del(self, spool, conn, room, whom, event, args):
         """#todo del [id]"""
         if(args[2].isdigit()):
             id = int(args[2])
             result = conn.execute("select (username) from TODO where id = ?", (id,))
             usernames = result.fetchone()
             if(usernames == None):
-                self.post(room, "そんな予定はない")
+                spool.write("そんな予定はない")
             elif(usernames[0] == '@' or usernames[0] == whom):
                 conn.execute("delete from TODO WHERE id = ?;", (args[2],))
-                self.post(room, '削除したよ')
+                spool.write('削除したよ')
             else:
-                self.post(room, "それはお前の予定じゃない")
+                spool.write("それはお前の予定じゃない")
         else:
-            self.post(room, "そもそも予定じゃない")
+            spool.write("そもそも予定じゃない")
+        return spool
 
-    def handle_show(self, conn, room, whom, event, args):
+    def handle_show(self, spool, conn, room, whom, event, args):
         """#todo show [id]"""
         if(args[2].isdigit()):
             id = int(args[2])
             result = conn.execute("select * from TODO where id = ?", (id,))
             row = result.fetchone()
             if(row == None):
-                self.post(room, "そんな予定はない")
+                spool.write("そんな予定はない")
             else:
-                self.post(room, prnformat(row))
+                spool.add(row)
         else:
-            self.post(room, "そもそも予定じゃない")
+            spool.write("そもそも予定じゃない")
+        return spool
 
-    def handle_sudodel(self, conn, room, whom, event, args):
+    def handle_sudodel(self, spool, conn, room, whom, event, args):
         """#todo sudodel [id]"""
         if(args[2].isdigit()):
             if self.is_admin(whom):
@@ -250,29 +263,31 @@ class ToDoBot(object):
                 result = conn.execute("select (username) from TODO where id = ?", (id,))
                 usernames = result.fetchone()
                 if(usernames == None):
-                    self.post(room, "そんな予定はない")
+                    spool.write(room, "そんな予定はない")
                 else:
                     conn.execute("delete from TODO WHERE id = ?;", (args[2],))
-                    self.post(room, '削除したよ')
+                    spool.write('削除したよ')
             else:
-                self.post(room, 'sudoersに入ってないよ')
+                spool.write('sudoersに入ってないよ')
         else:
-            self.post(room, "そもそも予定じゃない")
+            spool.write("そもそも予定じゃない")
+        return spool
 
-    def handle_debug(self, conn, room, whom, event, args):
+    def handle_debug(self, spool, conn, room, whom, event, args):
         """#todo debug [id]"""
         if self.is_admin(whom):
             if(args[2].isdigit()):
                 result = conn.execute("select (username) from TODO where id = ?", (int(args[2]),))
-                print(str(result.fetchone()))
+                spool.write(str(result.fetchone()))
+        return spool
 
-    def handle_about(self, conn, room, whom, event, args):
+    def handle_about(self, spool, conn, room, whom, event, args):
         """#todo about"""
-        self.buffered_post(room, "To Do Bot ")
-        self.buffered_post(room, gitsha1.Id + ' on ' + sys.version)
-        self.buffered_post(room, "It provides task management feature to lingr room.")
-        self.buffered_post(room, "see https://github.com/akechi/todobot")
-        self.flush_buf(room)
+        spool.write("To Do Bot\n")
+        spool.write(gitsha1.Id + ' on ' + sys.version + '\n')
+        spool.write("It provides task management feature to lingr room.\n")
+        spool.write("see https://github.com/akechi/todobot")
+        return spool
 
 
     def serve_as_cgi(self, content_length):
@@ -281,12 +296,17 @@ class ToDoBot(object):
         array = json.loads(query)
         events = array['events']
         for event in events:
-            self.handle(event)
-                
+            s = self.handle(event)
+            for t in s.render_as_text(500):
+                self.post(s.room, t)
+
         
 if __name__ == '__main__':
+    from sqlalchemy import create_engine
+    from sqlalchemy.pool import QueuePool
+    # maybe poolclass=SingletonThreadPool
+
     engine = create_engine('sqlite:///./todo.sqlite', poolclass=QueuePool)
     bot = ToDoBot(b'lion', bot_secret=open('todo.txt', mode='rb').read(), engine=engine)
     bot.serve_as_cgi(int(os.environ['CONTENT_LENGTH']))
-
 
