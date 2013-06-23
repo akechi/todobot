@@ -1,7 +1,7 @@
 
 
 
-test: todo_py test_todo.py freeze.txt setup.sh
+test: todo.py test_todo.py freeze.txt setup.sh
 	python3.3 test_todo.py 
 
 update: setup.sh freeze.txt

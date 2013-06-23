@@ -6,7 +6,10 @@ To install venv + pip
 $ make venvpip
 
 Then, 
+
+$ source py3.3/bin/activate
+
+to satisfy dependency, do:
 $ make update
-to satisfy dependency.
 
 
