@@ -1,4 +1,5 @@
-#!/usr/local/bin/python3.3
+#!/usr/bin/env python3.3
+
 if __name__ == '__main__':
     import sys
     rc = 1
