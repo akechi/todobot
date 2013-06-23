@@ -3,27 +3,31 @@
 from todo import ToDoBot
 import unittest
 
+from sqlalchemy import create_engine
+from sqlalchemy.pool import QueuePool
+
 from io import StringIO
 import sys
 
 class ToDoBotTestCase(unittest.TestCase):
     def setUp(self):
-        self.bot = ToDoBot('lion', bot_secret=None, dbpath=':memory:')
-        c = self.bot.con.cursor()
+        engine = create_engine('sqlite:///:memory:', poolclass=QueuePool)
+        self.bot = ToDoBot('lion', bot_secret=None, engine=engine)
+
+        conn = self.bot.engine.connect()
         with open('todo_schema.sql') as f:
-            c.execute(f.read())
-        self.bot.con.commit()
+            conn.execute(f.read())
 
-        c.execute("insert into TODO (username, description, created_at, status) values (?, ?, datetime('now', 'localtime'), 0);", ('raa0121', str('test data 1')))
-        c.execute("insert into TODO (username, description, created_at, status) values (?, ?, datetime('now', 'localtime'), 0);", ('raa0121', str('test data 2')))
-        c.execute("insert into TODO (username, description, created_at, status) values (?, ?, datetime('now', 'localtime'), 1);", ('raa0121', str('test data 3')))
-        c.execute("insert into TODO (username, description, created_at, status) values (?, ?, datetime('now', 'localtime'), 0);", ('bgnori', str('test data 4')))
-        c.execute("insert into TODO (username, description, created_at, status) values (?, ?, datetime('now', 'localtime'), 1);", ('bgnori', str('test data 5')))
-        self.bot.con.commit()
+        conn.execute("insert into TODO (username, description, created_at, status) values (?, ?, datetime('now', 'localtime'), 0);", ('raa0121', str('test data 1')))
+        conn.execute("insert into TODO (username, description, created_at, status) values (?, ?, datetime('now', 'localtime'), 0);", ('raa0121', str('test data 2')))
+        conn.execute("insert into TODO (username, description, created_at, status) values (?, ?, datetime('now', 'localtime'), 1);", ('raa0121', str('test data 3')))
+        conn.execute("insert into TODO (username, description, created_at, status) values (?, ?, datetime('now', 'localtime'), 0);", ('bgnori', str('test data 4')))
+        conn.execute("insert into TODO (username, description, created_at, status) values (?, ?, datetime('now', 'localtime'), 1);", ('bgnori', str('test data 5')))
+        #conn.close()
 
-        c.execute("select * from TODO where username = ? AND status = 0", ('raa0121',))
+        result = conn.execute("select * from TODO where username = ? AND status = 0", ('raa0121',))
         i = None
-        for i, r in enumerate(c):
+        for i, r in enumerate(result):
             self.assertEqual('raa0121', r[1])
         self.assertEqual(1, i)
 
@@ -64,9 +68,9 @@ class ToDoBotTestCase(unittest.TestCase):
         self.bot.serve_as_cgi(len(req))
         v = sys.stdout.getvalue()
         self.assertTrue(v.startswith('Content-type: text/html\n'))
-        c = self.bot.con.cursor()
-        c.execute("select * from TODO where username = ? AND status = 0", ('raa0121',))
-        self.assertEqual(3, len([r for r in c]))
+        conn = self.bot.engine.connect()
+        result = conn.execute("select * from TODO where username = ? AND status = 0", ('raa0121',))
+        self.assertEqual(3, len([r for r in result]))
 
 
     def test_addto(self):
@@ -75,12 +79,11 @@ class ToDoBotTestCase(unittest.TestCase):
         self.bot.serve_as_cgi(len(req))
         v = sys.stdout.getvalue()
         self.assertTrue(v.startswith('Content-type: text/html\n'))
-        c = self.bot.con.cursor()
-        c.execute("select * from TODO where username = ? AND status = 0", ('raa0121',))
-        self.assertEqual(2, len([r for r in c]))
-        c = self.bot.con.cursor()
-        c.execute("select * from TODO where username = ? AND status = 0", ('bgnori',))
-        self.assertEqual(2, len([r for r in c]))
+        conn = self.bot.engine.connect()
+        result = conn.execute("select * from TODO where username = ? AND status = 0", ('raa0121',))
+        self.assertEqual(2, len([r for r in result]))
+        result = conn.execute("select * from TODO where username = ? AND status = 0", ('bgnori',))
+        self.assertEqual(2, len([r for r in result]))
 
 
     def test_list_all(self):
@@ -173,12 +176,11 @@ class ToDoBotTestCase(unittest.TestCase):
         v = sys.stdout.getvalue()
         self.assertTrue(v.startswith('Content-type: text/html\n'))
 
-        c = self.bot.con.cursor()
-        c.execute("select * from TODO where username = ? AND status = 0", ('raa0121',))
-        self.assertEqual(1, len([r for r in c]))
-        c = self.bot.con.cursor()
-        c.execute("select * from TODO where username = ? AND status = 0", ('bgnori',))
-        self.assertEqual(1, len([r for r in c]))
+        conn = self.bot.engine.connect()
+        result = conn.execute("select * from TODO where username = ? AND status = 0", ('raa0121',))
+        self.assertEqual(1, len([r for r in result]))
+        result = conn.execute("select * from TODO where username = ? AND status = 0", ('bgnori',))
+        self.assertEqual(1, len([r for r in result]))
 
 
     def test_show(self):
