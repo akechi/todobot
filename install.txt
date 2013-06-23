@@ -13,3 +13,5 @@ to satisfy dependency, do:
 $ make update
 
 
+U might need create dir:
+py3.3/lib64/python/site-packages/
