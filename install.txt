@@ -8,6 +8,8 @@ http://ymotongpoo.hatenablog.com/entry/2012/09/03/002604
 * distributeを入れれば、easy_installが入るので、それを使ってFlaskを入れます
 * どういう訳だか vpy3.3/binがPATHに追加されんのです...
 
+* pipを入れた. Flaskより先に入れるべきだろう
+
 
 $ ./pyenv-3.3.py vpy3.3
 $ source vpy3.3/bin/activate
@@ -17,6 +19,6 @@ $ cd distribute-0.6.28
 $ python setup.py install
 $ cd ..
 $ ./vpy3.3/bin/easy_install-3.3 Flask
-
+$ ./vpy3.3/bin/easy_install-3.3 pip
 
 
