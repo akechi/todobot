@@ -1,7 +1,7 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
-from todo import ToDoBot, Lingrman
+from todo import ToDoBot, Lingrman, Spool, prnformat
 from flask import Flask, request
 from flask import json
 
@@ -17,9 +17,15 @@ class Flasky(ToDoBot):
     def lingrbot(self):
         if request.method == 'POST':
             array = json.loads(request.data)
-            return ''.join([self.postman.deliver(self.handle(event)) for event in array['events']])
+            return ''.join([self.postman.deliver(self.on_json(event)) for event in array['events']])
         else:
             return 'hello! ' #self.handle_about(None, None, None, None, None)
+
+    def list_username(self, username):
+        spool = Spool(None)
+        got = self.handle('list', spool, username)
+
+        return "<br/>".join([prnformat(r) for r in got.rows])
 
 app = Flask(__name__)
 
@@ -62,5 +68,10 @@ if __name__ == '__main__':
     bot = Flasky(postman=lingr, engine=engine)
 
     app.route('/lingrbot', methods=['GET', 'POST'])(bot.lingrbot)
-    app.run(host='0.0.0.0', port=11001)
+    app.route('/listof/<username>', methods=['GET'])(bot.list_username)
+    if app.debug:
+        app.run()
+    else:
+        app.run(host='0.0.0.0', port=11001)
+    
 
