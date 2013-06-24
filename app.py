@@ -57,6 +57,7 @@ if __name__ == '__main__':
     from sqlalchemy import create_engine
     from sqlalchemy.pool import QueuePool
     # maybe poolclass=SingletonThreadPool
+    from sqlalchemy.orm import sessionmaker
 
     if len(sys.argv) > 1 and sys.argv[1] == 'debug':
         app.debug = True
@@ -66,7 +67,7 @@ if __name__ == '__main__':
     engine = create_engine('sqlite:///./todo.sqlite', poolclass=QueuePool)
     lingr = Lingrman(b'todo2', bot_secret=open('todo.txt', mode='rb').read().rstrip())
 
-    bot = Flasky(postman=lingr, engine=engine)
+    bot = Flasky(lingr, sessionmaker(bind=engine))
 
     app.route('/lingrbot', methods=['GET', 'POST'])(bot.lingrbot)
     app.route('/<cmd>/<username>', methods=['GET'])(bot.one_arg)

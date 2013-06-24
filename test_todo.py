@@ -7,15 +7,17 @@ import json
 
 from sqlalchemy import create_engine
 from sqlalchemy.pool import QueuePool
+from sqlalchemy.orm import sessionmaker
 
 
 class ToDoBotTestCase(unittest.TestCase):
     def setUp(self):
-        engine = create_engine('sqlite:///:memory:', poolclass=QueuePool)
+        self.engine = create_engine('sqlite:///:memory:', poolclass=QueuePool)
         self.postman = Postman()
-        self.bot = ToDoBot(self.postman, engine=engine)
 
-        conn = self.bot.engine.connect()
+        self.bot = ToDoBot(self.postman, sessionmaker(bind=self.engine))
+
+        conn = self.engine.connect()
         with open('todo_schema.sql') as f:
             conn.execute(f.read())
 
@@ -66,7 +68,7 @@ class ToDoBotTestCase(unittest.TestCase):
         event = json.loads(req)['events'][0]
         s = self.bot.on_json(event)
 
-        conn = self.bot.engine.connect()
+        conn = self.engine.connect()
         result = conn.execute("select * from TODO where username = ? AND status = 0", ('raa0121',))
         self.assertEqual(3, len([r for r in result]))
 
@@ -76,7 +78,7 @@ class ToDoBotTestCase(unittest.TestCase):
         event = json.loads(req)['events'][0]
         s = self.bot.on_json(event)
 
-        conn = self.bot.engine.connect()
+        conn = self.engine.connect()
         result = conn.execute("select * from TODO where username = ? AND status = 0", ('raa0121',))
         self.assertEqual(2, len([r for r in result]))
         result = conn.execute("select * from TODO where username = ? AND status = 0", ('bgnori',))
@@ -88,7 +90,7 @@ class ToDoBotTestCase(unittest.TestCase):
         event = json.loads(req)['events'][0]
         s = self.bot.on_json(event)
 
-        xs = [prnformat(r) for r in s.rows]
+        xs = [r.prnformat() for r in s.rows]
         self.assertEqual(2, len([x for x in xs if x.startswith('[_]')]))
         self.assertEqual(1, len([x for x in xs if x.startswith('[X]')]))
 
@@ -98,7 +100,7 @@ class ToDoBotTestCase(unittest.TestCase):
         event = json.loads(req)['events'][0]
         s = self.bot.on_json(event)
 
-        xs = [prnformat(r) for r in s.rows]
+        xs = [r.prnformat() for r in s.rows]
         self.assertEqual(0, len([x for x in xs if x.startswith('[_]')]))
         self.assertEqual(1, len([x for x in xs if x.startswith('[X]')]))
 
@@ -107,7 +109,7 @@ class ToDoBotTestCase(unittest.TestCase):
         event = json.loads(req)['events'][0]
         s = self.bot.on_json(event)
 
-        xs = [prnformat(r) for r in s.rows]
+        xs = [r.prnformat() for r in s.rows]
         self.assertEqual(2, len([x for x in xs if x.startswith('[_]')]))
         self.assertEqual(0, len([x for x in xs if x.startswith('[X]')]))
 
@@ -117,7 +119,7 @@ class ToDoBotTestCase(unittest.TestCase):
         event = json.loads(req)['events'][0]
         s = self.bot.on_json(event)
 
-        xs = [prnformat(r) for r in s.rows]
+        xs = [r.prnformat() for r in s.rows]
         self.assertEqual(1, len([x for x in xs if x.startswith('[_]')]))
 
 
@@ -127,7 +129,7 @@ class ToDoBotTestCase(unittest.TestCase):
         event = json.loads(req)['events'][0]
         s = self.bot.on_json(event)
 
-        xs = [prnformat(r) for r in s.rows]
+        xs = [r.prnformat() for r in s.rows]
         self.assertEqual(1, len([x for x in xs if x.startswith('[X]')]))
 
     def test_listof(self):
@@ -135,7 +137,7 @@ class ToDoBotTestCase(unittest.TestCase):
         event = json.loads(req)['events'][0]
         s = self.bot.on_json(event)
 
-        xs = [prnformat(r) for r in s.rows]
+        xs = [r.prnformat() for r in s.rows]
         self.assertEqual(1, len([x for x in xs if x.startswith('[_]')]))
 
 
@@ -144,7 +146,7 @@ class ToDoBotTestCase(unittest.TestCase):
         event = json.loads(req)['events'][0]
         s = self.bot.on_json(event)
 
-        xs = [prnformat(r) for r in s.rows]
+        xs = [r.prnformat() for r in s.rows]
         self.assertEqual(3, len([x for x in xs if x.startswith('[_]')]))
         self.assertEqual(2, len([x for x in xs if x.startswith('[X]')]))
 
@@ -153,9 +155,22 @@ class ToDoBotTestCase(unittest.TestCase):
         event = json.loads(req)['events'][0]
         s = self.bot.on_json(event)
 
-        xs = [prnformat(r) for r in s.rows]
+
+        conn = self.engine.connect()
+        result = conn.execute("select * from TODO where username = ? AND status = 1", ('raa0121',))
+        self.assertEqual(2, len([r for r in result]))
+
+
+        self.assertEqual(len(s.rows), 1)
+        v = s.rows[0].status
+        self.assertTrue(v)
+
+        '''
+        xs = [r.prnformat() for r in s.rows]
         self.assertEqual(0, len([x for x in xs if x.startswith('[_]')]))
         self.assertEqual(1, len([x for x in xs if x.startswith('[X]')]))
+        '''
+
 
     def test_del(self):
         req = """{"events":[{"message":{"text":"#todo del 2","speaker_id":"raa0121","room":"computer_science"}}]}"""
@@ -163,7 +178,7 @@ class ToDoBotTestCase(unittest.TestCase):
         s = self.bot.on_json(event)
 
 
-        conn = self.bot.engine.connect()
+        conn = self.engine.connect()
         result = conn.execute("select * from TODO where username = ? AND status = 0", ('raa0121',))
         self.assertEqual(1, len([r for r in result]))
         result = conn.execute("select * from TODO where username = ? AND status = 0", ('bgnori',))
@@ -175,7 +190,7 @@ class ToDoBotTestCase(unittest.TestCase):
         event = json.loads(req)['events'][0]
         s = self.bot.on_json(event)
 
-        xs = [prnformat(r) for r in s.rows]
+        xs = [r.prnformat() for r in s.rows]
         self.assertEqual(1, len([x for x in xs if x.startswith('[X]')]))
         self.assertEqual(0, len([x for x in xs if x.startswith('[_]')]))
 
