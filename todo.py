@@ -64,7 +64,7 @@ class Lingrman(object):
         self.verifier = hashlib.sha1(bot_id + bot_secret).hexdigest()
 
     def deliver(self, spool):
-        for t in s.render_for_lingr(500):
+        for t in spool.render_for_lingr(500):
             self.post(spool.room, t)
         return ''
 
