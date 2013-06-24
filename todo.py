@@ -11,8 +11,6 @@ import urllib.request, urllib.parse, urllib.error
 import urllib.request, urllib.error, urllib.parse
 import hashlib
 
-import gitsha1
-
 
 
 
@@ -285,7 +283,7 @@ class ToDoBot(object):
     def handle_about(self, spool, conn, room, whom, event, args):
         """#todo about"""
         spool.write("To Do Bot\n")
-        spool.write(gitsha1.Id + ' on ' + sys.version + '\n')
+        spool.write('on ' + sys.version + '\n')
         spool.write("It provides task management feature to lingr room.\n")
         spool.write("see https://github.com/akechi/todobot")
         return spool
