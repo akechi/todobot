@@ -54,34 +54,40 @@ class Spool(object):
             yield self.text
 
 
+class Postman(object):
+    def deliver(self, spool):
+        pass
+
+class Lingrman(object):
+    def __init__(self, bot_id, bot_secret):
+        self.bot_id = bot_id
+        self.verifier = hashlib.sha1(bot_id + bot_secret).hexdigest()
+
+    def deliver(self, room, spool):
+        for t in s.render_for_lingr(500):
+            self.post(s.room, t)
+        return ''
+
+    def post(self, room, text):
+        '''
+            FIXME: return values, timeoout
+        '''
+        req = {'room':room, 'bot':self.bot_id, 'text':text, 'bot_verifier':self.verifier}
+        params = urllib.parse.urlencode(req)
+        r = urllib.request.urlopen('http://lingr.com/api/room/say?' + params)
+        #print(r.read(), sys.stderr)
+
+
+
 class ToDoBot(object):
     nohelp = "*** No help on %s"
     help_postfix = """\r\nこのボットはあるふぁばんです\r\n何があっても知りません"""
     prefix = 'handle_'
     adminnicks = set(['aoisensi'])
 
-
-    def __init__(self, bot_id, bot_secret, engine):
-        self.bot_id = bot_id
-        if bot_secret:
-            self.verifier = hashlib.sha1(bot_id + bot_secret).hexdigest()
-        else:
-            self.verifier = None
+    def __init__(self, postman, engine):
         self.engine = engine 
-        #self.con.text_factory = str
-
-    def post(self, room, text):
-        '''
-            FIXME: return values, timeoout
-
-        '''
-        if self.verifier:
-            req = {'room':room, 'bot':self.bot_id, 'text':text, 'bot_verifier':self.verifier}
-            params = urllib.parse.urlencode(req)
-            r = urllib.request.urlopen('http://lingr.com/api/room/say?' + params)
-            #print(r.read(), sys.stderr)
-        else:
-            print(text, file=sys.stdout)
+        self.postman = postman
 
     def handle(self, event):
         args = event['message']['text'].split()

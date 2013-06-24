@@ -1,6 +1,6 @@
 
 
-from todo import ToDoBot, prnformat
+from todo import ToDoBot, Postman, prnformat
 import unittest
 
 import json
@@ -8,13 +8,12 @@ import json
 from sqlalchemy import create_engine
 from sqlalchemy.pool import QueuePool
 
-from io import StringIO
-import sys
 
 class ToDoBotTestCase(unittest.TestCase):
     def setUp(self):
         engine = create_engine('sqlite:///:memory:', poolclass=QueuePool)
-        self.bot = ToDoBot('lion', bot_secret=None, engine=engine)
+        self.postman = Postman()
+        self.bot = ToDoBot(self.postman, engine=engine)
 
         conn = self.bot.engine.connect()
         with open('todo_schema.sql') as f:
@@ -33,7 +32,6 @@ class ToDoBotTestCase(unittest.TestCase):
             self.assertEqual('raa0121', r[1])
         self.assertEqual(1, i)
 
-        sys.stdout = StringIO()
 
     def test_get_handle_XXX(self):
         bot = self.bot

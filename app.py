@@ -1,7 +1,7 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
-from todo import ToDoBot
+from todo import ToDoBot, Lingrman
 from flask import Flask, request
 from flask import json
 
@@ -10,17 +10,14 @@ import os
 import logging
 from logging.handlers import RotatingFileHandler
 
+
+
+
 class Flasky(ToDoBot):
-    ''' UGH, buffer is not thread safe!!'''
     def lingrbot(self):
         if request.method == 'POST':
-            text = request.data
-            array = json.loads(text)
-            for event in array['events']:
-                s = self.handle(event) 
-                for t in s.render_for_lingr(500):
-                    self.post(s.room, t)
-            return ''
+            array = json.loads(request.data)
+            return ''.join([self.postman.deliver(self.handle(event)) for event in array['events']])
         else:
             return 'hello! ' #self.handle_about(None, None, None, None, None)
 
@@ -60,11 +57,9 @@ if __name__ == '__main__':
         app.logger.setLevel(logging.INFO)
 
     engine = create_engine('sqlite:///./todo.sqlite', poolclass=QueuePool)
+    lingr = Lingrman(b'todo2', bot_secret=open('todo.txt', mode='rb').read().rstrip())
 
-    if app.debug:
-        bot = Flasky(b'todo2', bot_secret=None, engine=engine)
-    else:
-        bot = Flasky(b'todo2', bot_secret=open('todo.txt', mode='rb').read().rstrip(), engine=engine)
+    bot = Flasky(postman=lingr, engine=engine)
 
     app.route('/lingrbot', methods=['GET', 'POST'])(bot.lingrbot)
     app.run(host='0.0.0.0', port=11001)
