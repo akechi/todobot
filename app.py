@@ -21,11 +21,12 @@ class Flasky(ToDoBot):
         else:
             return 'hello! ' #self.handle_about(None, None, None, None, None)
 
-    def list_username(self, username):
+    def one_arg(self, cmd, username):
         spool = Spool(None)
-        got = self.handle('list', spool, username)
+        got = self.handle(cmd, spool, username)
 
         return "<br/>".join([prnformat(r) for r in got.rows])
+
 
 app = Flask(__name__)
 
@@ -68,7 +69,7 @@ if __name__ == '__main__':
     bot = Flasky(postman=lingr, engine=engine)
 
     app.route('/lingrbot', methods=['GET', 'POST'])(bot.lingrbot)
-    app.route('/listof/<username>', methods=['GET'])(bot.list_username)
+    app.route('/<cmd>/<username>', methods=['GET'])(bot.one_arg)
     if app.debug:
         app.run()
     else:
