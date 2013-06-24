@@ -45,7 +45,7 @@ class ToDoBotTestCase(unittest.TestCase):
     def test_help(self):
         req = """{"events":[{"message":{"text":"#todo help","speaker_id":"raa0121","room":"computer_science"}}]}"""
         event = json.loads(req)['events'][0]
-        s = self.bot.handle(event)
+        s = self.bot.on_json(event)
 
         xs = s.text.splitlines()
         self.assertIn('#todo done [id]', xs)
@@ -55,7 +55,7 @@ class ToDoBotTestCase(unittest.TestCase):
     def test_help_arg(self):
         req = """{"events":[{"message":{"text":"#todo help done","speaker_id":"raa0121","room":"computer_science"}}]}"""
         event = json.loads(req)['events'][0]
-        s = self.bot.handle(event)
+        s = self.bot.on_json(event)
 
         xs = s.text.splitlines()
         self.assertIn('#todo done [id]', xs)
@@ -64,7 +64,7 @@ class ToDoBotTestCase(unittest.TestCase):
     def test_add(self):
         req = """{"events":[{"message":{"text":"#todo add test_add","speaker_id":"raa0121","room":"computer_science"}}]}"""
         event = json.loads(req)['events'][0]
-        s = self.bot.handle(event)
+        s = self.bot.on_json(event)
 
         conn = self.bot.engine.connect()
         result = conn.execute("select * from TODO where username = ? AND status = 0", ('raa0121',))
@@ -74,7 +74,7 @@ class ToDoBotTestCase(unittest.TestCase):
     def test_addto(self):
         req = """{"events":[{"message":{"text":"#todo addto bgnori test_addto","speaker_id":"raa0121","room":"computer_science"}}]}"""
         event = json.loads(req)['events'][0]
-        s = self.bot.handle(event)
+        s = self.bot.on_json(event)
 
         conn = self.bot.engine.connect()
         result = conn.execute("select * from TODO where username = ? AND status = 0", ('raa0121',))
@@ -86,7 +86,7 @@ class ToDoBotTestCase(unittest.TestCase):
     def test_list_all(self):
         req = """{"events":[{"message":{"text":"#todo list-all","speaker_id":"raa0121","room":"computer_science"}}]}"""
         event = json.loads(req)['events'][0]
-        s = self.bot.handle(event)
+        s = self.bot.on_json(event)
 
         xs = [prnformat(r) for r in s.rows]
         self.assertEqual(2, len([x for x in xs if x.startswith('[_]')]))
@@ -96,7 +96,7 @@ class ToDoBotTestCase(unittest.TestCase):
     def test_list_done(self):
         req = """{"events":[{"message":{"text":"#todo list-done","speaker_id":"raa0121","room":"computer_science"}}]}"""
         event = json.loads(req)['events'][0]
-        s = self.bot.handle(event)
+        s = self.bot.on_json(event)
 
         xs = [prnformat(r) for r in s.rows]
         self.assertEqual(0, len([x for x in xs if x.startswith('[_]')]))
@@ -105,7 +105,7 @@ class ToDoBotTestCase(unittest.TestCase):
     def test_list(self):
         req = """{"events":[{"message":{"text":"#todo list","speaker_id":"raa0121","room":"computer_science"}}]}"""
         event = json.loads(req)['events'][0]
-        s = self.bot.handle(event)
+        s = self.bot.on_json(event)
 
         xs = [prnformat(r) for r in s.rows]
         self.assertEqual(2, len([x for x in xs if x.startswith('[_]')]))
@@ -115,7 +115,7 @@ class ToDoBotTestCase(unittest.TestCase):
     def test_listof_all(self):
         req = """{"events":[{"message":{"text":"#todo listof-all bgnori","speaker_id":"raa0121","room":"computer_science"}}]}"""
         event = json.loads(req)['events'][0]
-        s = self.bot.handle(event)
+        s = self.bot.on_json(event)
 
         xs = [prnformat(r) for r in s.rows]
         self.assertEqual(1, len([x for x in xs if x.startswith('[_]')]))
@@ -125,7 +125,7 @@ class ToDoBotTestCase(unittest.TestCase):
     def test_listof_done(self):
         req = """{"events":[{"message":{"text":"#todo listof-done bgnori","speaker_id":"raa0121","room":"computer_science"}}]}"""
         event = json.loads(req)['events'][0]
-        s = self.bot.handle(event)
+        s = self.bot.on_json(event)
 
         xs = [prnformat(r) for r in s.rows]
         self.assertEqual(1, len([x for x in xs if x.startswith('[X]')]))
@@ -133,7 +133,7 @@ class ToDoBotTestCase(unittest.TestCase):
     def test_listof(self):
         req = """{"events":[{"message":{"text":"#todo listof bgnori","speaker_id":"raa0121","room":"computer_science"}}]}"""
         event = json.loads(req)['events'][0]
-        s = self.bot.handle(event)
+        s = self.bot.on_json(event)
 
         xs = [prnformat(r) for r in s.rows]
         self.assertEqual(1, len([x for x in xs if x.startswith('[_]')]))
@@ -142,7 +142,7 @@ class ToDoBotTestCase(unittest.TestCase):
     def test_list_everything(self):
         req = """{"events":[{"message":{"text":"#todo list-everything","speaker_id":"raa0121","room":"computer_science"}}]}"""
         event = json.loads(req)['events'][0]
-        s = self.bot.handle(event)
+        s = self.bot.on_json(event)
 
         xs = [prnformat(r) for r in s.rows]
         self.assertEqual(3, len([x for x in xs if x.startswith('[_]')]))
@@ -151,7 +151,7 @@ class ToDoBotTestCase(unittest.TestCase):
     def test_done(self):
         req = """{"events":[{"message":{"text":"#todo done 1","speaker_id":"raa0121","room":"computer_science"}}]}"""
         event = json.loads(req)['events'][0]
-        s = self.bot.handle(event)
+        s = self.bot.on_json(event)
 
         xs = [prnformat(r) for r in s.rows]
         self.assertEqual(0, len([x for x in xs if x.startswith('[_]')]))
@@ -160,7 +160,7 @@ class ToDoBotTestCase(unittest.TestCase):
     def test_del(self):
         req = """{"events":[{"message":{"text":"#todo del 2","speaker_id":"raa0121","room":"computer_science"}}]}"""
         event = json.loads(req)['events'][0]
-        s = self.bot.handle(event)
+        s = self.bot.on_json(event)
 
 
         conn = self.bot.engine.connect()
@@ -173,7 +173,7 @@ class ToDoBotTestCase(unittest.TestCase):
     def test_show(self):
         req = """{"events":[{"message":{"text":"#todo show 3","speaker_id":"raa0121","room":"computer_science"}}]}"""
         event = json.loads(req)['events'][0]
-        s = self.bot.handle(event)
+        s = self.bot.on_json(event)
 
         xs = [prnformat(r) for r in s.rows]
         self.assertEqual(1, len([x for x in xs if x.startswith('[X]')]))
@@ -182,7 +182,7 @@ class ToDoBotTestCase(unittest.TestCase):
     def test_about(self):
         req = """{"events":[{"message":{"text":"#todo about","speaker_id":"raa0121","room":"computer_science"}}]}"""
         event = json.loads(req)['events'][0]
-        s = self.bot.handle(event)
+        s = self.bot.on_json(event)
 
         xs = s.text.splitlines()
         self.assertIn("It provides task management feature to lingr room.", xs)
