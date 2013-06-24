@@ -3,7 +3,7 @@
 tag:
 	rm gitsha1.py; git checkout gitsha1.py
 
-test: todo.py test_todo.py freeze.txt setup.sh
+test: todo/lingrbot.py test_todo.py freeze.txt setup.sh
 	python3.3 test_todo.py 
 
 update: setup.sh freeze.txt

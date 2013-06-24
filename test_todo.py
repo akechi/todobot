@@ -1,6 +1,6 @@
 
 
-from todo import ToDoBot, Postman, prnformat
+from todo.lingrbot import ToDoBot, Postman, prnformat
 import unittest
 
 import json
