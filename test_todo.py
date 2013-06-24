@@ -3,6 +3,8 @@
 from todo import ToDoBot
 import unittest
 
+import json
+
 from sqlalchemy import create_engine
 from sqlalchemy.pool import QueuePool
 
@@ -44,13 +46,13 @@ class ToDoBotTestCase(unittest.TestCase):
 
     def test_help(self):
         req = """{"events":[{"message":{"text":"#todo help","speaker_id":"raa0121","room":"computer_science"}}]}"""
-        sys.stdin = StringIO(req)
-        self.bot.serve_as_cgi(len(req))
-        v = sys.stdout.getvalue()
-        self.assertTrue(v.startswith('Content-type: text/html\n'))
-        xs = v.splitlines()
+        event = json.loads(req)['events'][0]
+        s = self.bot.handle(event)
+
+        xs = s.text.splitlines()
         self.assertIn('#todo done [id]', xs)
         self.assertIn('#todo show [id]', xs)
+
 
     def test_help_arg(self):
         req = """{"events":[{"message":{"text":"#todo help done","speaker_id":"raa0121","room":"computer_science"}}]}"""
