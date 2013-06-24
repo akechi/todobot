@@ -231,7 +231,7 @@ class ToDoBot(object):
         if found.username.startswith('@') or found.username == whom:
             found.status = True
             session.commit()
-            spool.add(found)
+            spool.write(found.prnformat())
         else:
             spool.write("それはお前の予定じゃない")
         return spool

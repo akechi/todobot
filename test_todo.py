@@ -161,15 +161,7 @@ class ToDoBotTestCase(unittest.TestCase):
         self.assertEqual(2, len([r for r in result]))
 
 
-        self.assertEqual(len(s.rows), 1)
-        v = s.rows[0].status
-        self.assertTrue(v)
-
-        '''
-        xs = [r.prnformat() for r in s.rows]
-        self.assertEqual(0, len([x for x in xs if x.startswith('[_]')]))
-        self.assertEqual(1, len([x for x in xs if x.startswith('[X]')]))
-        '''
+        self.assertTrue(s.text.startswith('[X]'))
 
 
     def test_del(self):
