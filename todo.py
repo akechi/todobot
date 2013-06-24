@@ -40,7 +40,7 @@ class Spool(object):
     def write(self, s):
         self.text += s
 
-    def render_as_text(self, size):
+    def render_for_lingr(self, size):
         if self.rows:
             buf = []
             for next in self.rows:

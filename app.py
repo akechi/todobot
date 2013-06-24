@@ -18,7 +18,7 @@ class Flasky(ToDoBot):
             array = json.loads(text)
             for event in array['events']:
                 s = self.handle(event) 
-                for t in s.render_as_text(500):
+                for t in s.render_for_lingr(500):
                     self.post(s.room, t)
             return ''
         else:
