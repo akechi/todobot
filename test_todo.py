@@ -1,6 +1,6 @@
 
 
-from todo import ToDoBot
+from todo import ToDoBot, prnformat
 import unittest
 
 import json
@@ -56,20 +56,18 @@ class ToDoBotTestCase(unittest.TestCase):
 
     def test_help_arg(self):
         req = """{"events":[{"message":{"text":"#todo help done","speaker_id":"raa0121","room":"computer_science"}}]}"""
-        sys.stdin = StringIO(req)
-        self.bot.serve_as_cgi(len(req))
-        v = sys.stdout.getvalue()
-        self.assertTrue(v.startswith('Content-type: text/html\n'))
-        xs = v.splitlines()
+        event = json.loads(req)['events'][0]
+        s = self.bot.handle(event)
+
+        xs = s.text.splitlines()
         self.assertIn('#todo done [id]', xs)
         self.assertNotIn('#todo show [id]', xs)
 
     def test_add(self):
         req = """{"events":[{"message":{"text":"#todo add test_add","speaker_id":"raa0121","room":"computer_science"}}]}"""
-        sys.stdin = StringIO(req)
-        self.bot.serve_as_cgi(len(req))
-        v = sys.stdout.getvalue()
-        self.assertTrue(v.startswith('Content-type: text/html\n'))
+        event = json.loads(req)['events'][0]
+        s = self.bot.handle(event)
+
         conn = self.bot.engine.connect()
         result = conn.execute("select * from TODO where username = ? AND status = 0", ('raa0121',))
         self.assertEqual(3, len([r for r in result]))
@@ -77,10 +75,9 @@ class ToDoBotTestCase(unittest.TestCase):
 
     def test_addto(self):
         req = """{"events":[{"message":{"text":"#todo addto bgnori test_addto","speaker_id":"raa0121","room":"computer_science"}}]}"""
-        sys.stdin = StringIO(req)
-        self.bot.serve_as_cgi(len(req))
-        v = sys.stdout.getvalue()
-        self.assertTrue(v.startswith('Content-type: text/html\n'))
+        event = json.loads(req)['events'][0]
+        s = self.bot.handle(event)
+
         conn = self.bot.engine.connect()
         result = conn.execute("select * from TODO where username = ? AND status = 0", ('raa0121',))
         self.assertEqual(2, len([r for r in result]))
@@ -90,93 +87,83 @@ class ToDoBotTestCase(unittest.TestCase):
 
     def test_list_all(self):
         req = """{"events":[{"message":{"text":"#todo list-all","speaker_id":"raa0121","room":"computer_science"}}]}"""
-        sys.stdin = StringIO(req)
-        self.bot.serve_as_cgi(len(req))
-        v = sys.stdout.getvalue()
-        self.assertTrue(v.startswith('Content-type: text/html\n'))
-        xs = v.splitlines()
+        event = json.loads(req)['events'][0]
+        s = self.bot.handle(event)
+
+        xs = [prnformat(r) for r in s.rows]
         self.assertEqual(2, len([x for x in xs if x.startswith('[_]')]))
         self.assertEqual(1, len([x for x in xs if x.startswith('[X]')]))
 
 
     def test_list_done(self):
         req = """{"events":[{"message":{"text":"#todo list-done","speaker_id":"raa0121","room":"computer_science"}}]}"""
-        sys.stdin = StringIO(req)
-        self.bot.serve_as_cgi(len(req))
-        v = sys.stdout.getvalue()
-        self.assertTrue(v.startswith('Content-type: text/html\n'))
-        xs = v.splitlines()
+        event = json.loads(req)['events'][0]
+        s = self.bot.handle(event)
+
+        xs = [prnformat(r) for r in s.rows]
         self.assertEqual(0, len([x for x in xs if x.startswith('[_]')]))
         self.assertEqual(1, len([x for x in xs if x.startswith('[X]')]))
 
     def test_list(self):
         req = """{"events":[{"message":{"text":"#todo list","speaker_id":"raa0121","room":"computer_science"}}]}"""
-        sys.stdin = StringIO(req)
-        self.bot.serve_as_cgi(len(req))
-        v = sys.stdout.getvalue()
-        self.assertTrue(v.startswith('Content-type: text/html\n'))
-        xs = v.splitlines()
+        event = json.loads(req)['events'][0]
+        s = self.bot.handle(event)
+
+        xs = [prnformat(r) for r in s.rows]
         self.assertEqual(2, len([x for x in xs if x.startswith('[_]')]))
         self.assertEqual(0, len([x for x in xs if x.startswith('[X]')]))
 
 
     def test_listof_all(self):
         req = """{"events":[{"message":{"text":"#todo listof-all bgnori","speaker_id":"raa0121","room":"computer_science"}}]}"""
-        sys.stdin = StringIO(req)
-        self.bot.serve_as_cgi(len(req))
-        v = sys.stdout.getvalue()
-        self.assertTrue(v.startswith('Content-type: text/html\n'))
-        xs = v.splitlines()
+        event = json.loads(req)['events'][0]
+        s = self.bot.handle(event)
+
+        xs = [prnformat(r) for r in s.rows]
         self.assertEqual(1, len([x for x in xs if x.startswith('[_]')]))
 
 
 
     def test_listof_done(self):
         req = """{"events":[{"message":{"text":"#todo listof-done bgnori","speaker_id":"raa0121","room":"computer_science"}}]}"""
-        sys.stdin = StringIO(req)
-        self.bot.serve_as_cgi(len(req))
-        v = sys.stdout.getvalue()
-        self.assertTrue(v.startswith('Content-type: text/html\n'))
-        ''' need some assertions '''
-        xs = v.splitlines()
+        event = json.loads(req)['events'][0]
+        s = self.bot.handle(event)
+
+        xs = [prnformat(r) for r in s.rows]
         self.assertEqual(1, len([x for x in xs if x.startswith('[X]')]))
 
     def test_listof(self):
         req = """{"events":[{"message":{"text":"#todo listof bgnori","speaker_id":"raa0121","room":"computer_science"}}]}"""
-        sys.stdin = StringIO(req)
-        self.bot.serve_as_cgi(len(req))
-        v = sys.stdout.getvalue()
-        self.assertTrue(v.startswith('Content-type: text/html\n'))
-        xs = v.splitlines()
+        event = json.loads(req)['events'][0]
+        s = self.bot.handle(event)
+
+        xs = [prnformat(r) for r in s.rows]
         self.assertEqual(1, len([x for x in xs if x.startswith('[_]')]))
 
 
     def test_list_everything(self):
         req = """{"events":[{"message":{"text":"#todo list-everything","speaker_id":"raa0121","room":"computer_science"}}]}"""
-        sys.stdin = StringIO(req)
-        self.bot.serve_as_cgi(len(req))
-        v = sys.stdout.getvalue()
-        self.assertTrue(v.startswith('Content-type: text/html\n'))
-        xs = v.splitlines()
+        event = json.loads(req)['events'][0]
+        s = self.bot.handle(event)
+
+        xs = [prnformat(r) for r in s.rows]
         self.assertEqual(3, len([x for x in xs if x.startswith('[_]')]))
         self.assertEqual(2, len([x for x in xs if x.startswith('[X]')]))
 
     def test_done(self):
         req = """{"events":[{"message":{"text":"#todo done 1","speaker_id":"raa0121","room":"computer_science"}}]}"""
-        sys.stdin = StringIO(req)
-        self.bot.serve_as_cgi(len(req))
-        v = sys.stdout.getvalue()
-        self.assertTrue(v.startswith('Content-type: text/html\n'))
-        xs = v.splitlines()
+        event = json.loads(req)['events'][0]
+        s = self.bot.handle(event)
+
+        xs = [prnformat(r) for r in s.rows]
         self.assertEqual(0, len([x for x in xs if x.startswith('[_]')]))
         self.assertEqual(1, len([x for x in xs if x.startswith('[X]')]))
 
     def test_del(self):
         req = """{"events":[{"message":{"text":"#todo del 2","speaker_id":"raa0121","room":"computer_science"}}]}"""
-        sys.stdin = StringIO(req)
-        self.bot.serve_as_cgi(len(req))
-        v = sys.stdout.getvalue()
-        self.assertTrue(v.startswith('Content-type: text/html\n'))
+        event = json.loads(req)['events'][0]
+        s = self.bot.handle(event)
+
 
         conn = self.bot.engine.connect()
         result = conn.execute("select * from TODO where username = ? AND status = 0", ('raa0121',))
@@ -187,25 +174,19 @@ class ToDoBotTestCase(unittest.TestCase):
 
     def test_show(self):
         req = """{"events":[{"message":{"text":"#todo show 3","speaker_id":"raa0121","room":"computer_science"}}]}"""
-        sys.stdin = StringIO(req)
-        self.bot.serve_as_cgi(len(req))
-        v = sys.stdout.getvalue()
-        self.assertTrue(v.startswith('Content-type: text/html\n'))
-        ''' need some assertions '''
+        event = json.loads(req)['events'][0]
+        s = self.bot.handle(event)
 
-        xs = v.splitlines()
+        xs = [prnformat(r) for r in s.rows]
         self.assertEqual(1, len([x for x in xs if x.startswith('[X]')]))
         self.assertEqual(0, len([x for x in xs if x.startswith('[_]')]))
 
     def test_about(self):
         req = """{"events":[{"message":{"text":"#todo about","speaker_id":"raa0121","room":"computer_science"}}]}"""
-        sys.stdin = StringIO(req)
-        self.bot.serve_as_cgi(len(req))
-        v = sys.stdout.getvalue()
-        self.assertTrue(v.startswith('Content-type: text/html\n'))
-        ''' need some assertions '''
+        event = json.loads(req)['events'][0]
+        s = self.bot.handle(event)
 
-        xs = v.splitlines()
+        xs = s.text.splitlines()
         self.assertIn("It provides task management feature to lingr room.", xs)
         self.assertIn("see https://github.com/akechi/todobot", xs)
 
