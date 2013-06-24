@@ -13,8 +13,6 @@ import hashlib
 
 
 
-
-
 def prnformat(row):
     s = []
     if(row[4] != 0):
@@ -287,25 +285,4 @@ class ToDoBot(object):
         spool.write("It provides task management feature to lingr room.\n")
         spool.write("see https://github.com/akechi/todobot")
         return spool
-
-
-    def serve_as_cgi(self, content_length):
-        print('Content-type: text/html\n')
-        query = sys.stdin.read(content_length)
-        array = json.loads(query)
-        events = array['events']
-        for event in events:
-            s = self.handle(event)
-            for t in s.render_as_text(500):
-                self.post(s.room, t)
-
-        
-if __name__ == '__main__':
-    from sqlalchemy import create_engine
-    from sqlalchemy.pool import QueuePool
-    # maybe poolclass=SingletonThreadPool
-
-    engine = create_engine('sqlite:///./todo.sqlite', poolclass=QueuePool)
-    bot = ToDoBot(b'lion', bot_secret=open('todo.txt', mode='rb').read(), engine=engine)
-    bot.serve_as_cgi(int(os.environ['CONTENT_LENGTH']))
 
