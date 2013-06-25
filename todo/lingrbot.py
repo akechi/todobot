@@ -10,6 +10,7 @@ import json
 import urllib.request, urllib.parse, urllib.error
 import urllib.request, urllib.error, urllib.parse
 import hashlib
+from datetime import datetime
 
 from todo.models import ToDo
 
@@ -148,9 +149,11 @@ class ToDoBot(object):
     def handle_add(self, spool, session, who, *descriptions):
         """#todo add [description]"""
         text = ' '.join(descriptions)
-        td = ToDo(username=who, description=text, status=0)
+        td = ToDo(username=who, description=text, created_at=datetime.now(), status=0)
         session.add(td)
         session.commit()
+        toget = td.id
+        td = session.query(ToDo).get(toget)
         spool.add(td)
         return spool
 
