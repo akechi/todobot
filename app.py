@@ -25,7 +25,7 @@ class Flasky(ToDoBot):
         spool = Spool(None)
         got = self.handle(cmd, spool, username)
 
-        return "<br/>".join([prnformat(r) for r in got.rows])
+        return "<br/>".join([r.prnformat() for r in got.rows])
 
 
 app = Flask(__name__)
