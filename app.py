@@ -1,7 +1,7 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
-from todo.lingr import ToDoBot, Lingrman, Spool 
+from todo.lingrbot import ToDoBot, Lingrman, Spool 
 from flask import Flask, request
 from flask import json
 
