@@ -1,7 +1,14 @@
+#!/usr/bin/python
+# -*- coding: utf-8 -*-
 
 
 from todo.lingrbot import ToDoBot, Postman 
 from todo import models
+
+
+from mocks import LingrUser
+
+
 import unittest
 
 import json
@@ -37,6 +44,8 @@ class ToDoBotTestCase(unittest.TestCase):
         models.ToDo.add(username='bgnori', description='test data 5',
                 created_at=datetime.now(), status = True)
 
+        self.raa0121 = LingrUser('raa0121')
+
 
     def tearDown(self):
         self.engine.dispose()
@@ -52,7 +61,7 @@ class ToDoBotTestCase(unittest.TestCase):
 
 
     def test_help(self):
-        req = """{"events":[{"message":{"text":"#todo help","speaker_id":"raa0121","room":"computer_science"}}]}"""
+        req = self.raa0121.say('#todo help')
         event = json.loads(req)['events'][0]
         s = self.bot.on_json(event)
 
@@ -62,7 +71,7 @@ class ToDoBotTestCase(unittest.TestCase):
 
 
     def test_help_arg(self):
-        req = """{"events":[{"message":{"text":"#todo help done","speaker_id":"raa0121","room":"computer_science"}}]}"""
+        req = self.raa0121.say('#todo help done')
         event = json.loads(req)['events'][0]
         s = self.bot.on_json(event)
 
@@ -71,7 +80,7 @@ class ToDoBotTestCase(unittest.TestCase):
         self.assertNotIn('#todo show [id]', xs)
 
     def test_add(self):
-        req = """{"events":[{"message":{"text":"#todo add test_add","speaker_id":"raa0121","room":"computer_science"}}]}"""
+        req = self.raa0121.say('#todo add test_add')
         event = json.loads(req)['events'][0]
         s = self.bot.on_json(event)
 
@@ -80,7 +89,7 @@ class ToDoBotTestCase(unittest.TestCase):
 
 
     def test_addto(self):
-        req = """{"events":[{"message":{"text":"#todo addto bgnori test_addto","speaker_id":"raa0121","room":"computer_science"}}]}"""
+        req = self.raa0121.say('#todo addto bgnori test_add')
         event = json.loads(req)['events'][0]
         s = self.bot.on_json(event)
 
@@ -91,63 +100,63 @@ class ToDoBotTestCase(unittest.TestCase):
 
 
     def test_list_all(self):
-        req = """{"events":[{"message":{"text":"#todo list-all","speaker_id":"raa0121","room":"computer_science"}}]}"""
+        req = self.raa0121.say('#todo list-all')
         event = json.loads(req)['events'][0]
         s = self.bot.on_json(event)
 
         xs = [r.prnformat() for r in s.rows]
-        self.assertEqual(2, len([x for x in xs if x.startswith('[_]')]))
         self.assertEqual(1, len([x for x in xs if x.startswith('[X]')]))
+        self.assertEqual(2, len([x for x in xs if x.startswith('[_]')]))
 
 
     def test_list_done(self):
-        req = """{"events":[{"message":{"text":"#todo list-done","speaker_id":"raa0121","room":"computer_science"}}]}"""
+        req = self.raa0121.say('#todo list-done')
         event = json.loads(req)['events'][0]
         s = self.bot.on_json(event)
 
         xs = [r.prnformat() for r in s.rows]
-        self.assertEqual(0, len([x for x in xs if x.startswith('[_]')]))
         self.assertEqual(1, len([x for x in xs if x.startswith('[X]')]))
+        self.assertEqual(0, len([x for x in xs if x.startswith('[_]')]))
 
     def test_list(self):
-        req = """{"events":[{"message":{"text":"#todo list","speaker_id":"raa0121","room":"computer_science"}}]}"""
+        req = self.raa0121.say('#todo list')
         event = json.loads(req)['events'][0]
         s = self.bot.on_json(event)
 
         xs = [r.prnformat() for r in s.rows]
-        self.assertEqual(2, len([x for x in xs if x.startswith('[_]')]))
         self.assertEqual(0, len([x for x in xs if x.startswith('[X]')]))
-
+        self.assertEqual(2, len([x for x in xs if x.startswith('[_]')]))
 
     def test_listof_all(self):
-        req = """{"events":[{"message":{"text":"#todo listof-all bgnori","speaker_id":"raa0121","room":"computer_science"}}]}"""
-        event = json.loads(req)['events'][0]
-        s = self.bot.on_json(event)
-
-        xs = [r.prnformat() for r in s.rows]
-        self.assertEqual(1, len([x for x in xs if x.startswith('[_]')]))
-
-
-
-    def test_listof_done(self):
-        req = """{"events":[{"message":{"text":"#todo listof-done bgnori","speaker_id":"raa0121","room":"computer_science"}}]}"""
+        req = self.raa0121.say('#todo listof-all bgnori')
         event = json.loads(req)['events'][0]
         s = self.bot.on_json(event)
 
         xs = [r.prnformat() for r in s.rows]
         self.assertEqual(1, len([x for x in xs if x.startswith('[X]')]))
+        self.assertEqual(1, len([x for x in xs if x.startswith('[_]')]))
 
-    def test_listof(self):
-        req = """{"events":[{"message":{"text":"#todo listof bgnori","speaker_id":"raa0121","room":"computer_science"}}]}"""
+    def test_listof_done(self):
+        req = self.raa0121.say('#todo listof-done bgnori')
         event = json.loads(req)['events'][0]
         s = self.bot.on_json(event)
 
         xs = [r.prnformat() for r in s.rows]
+        self.assertEqual(1, len([x for x in xs if x.startswith('[X]')]))
+        self.assertEqual(0, len([x for x in xs if x.startswith('[_]')]))
+
+    def test_listof(self):
+        req = self.raa0121.say('#todo listof bgnori')
+        event = json.loads(req)['events'][0]
+        s = self.bot.on_json(event)
+
+        xs = [r.prnformat() for r in s.rows]
+        self.assertEqual(0, len([x for x in xs if x.startswith('[X]')]))
         self.assertEqual(1, len([x for x in xs if x.startswith('[_]')]))
 
 
     def test_list_everything(self):
-        req = """{"events":[{"message":{"text":"#todo list-everything","speaker_id":"raa0121","room":"computer_science"}}]}"""
+        req = self.raa0121.say('#todo list-everything')
         event = json.loads(req)['events'][0]
         s = self.bot.on_json(event)
 
@@ -156,30 +165,34 @@ class ToDoBotTestCase(unittest.TestCase):
         self.assertEqual(2, len([x for x in xs if x.startswith('[X]')]))
 
     def test_done(self):
-        req = """{"events":[{"message":{"text":"#todo done 1","speaker_id":"raa0121","room":"computer_science"}}]}"""
+        req = self.raa0121.say('#todo done 1')
         event = json.loads(req)['events'][0]
         s = self.bot.on_json(event)
+        self.assertTrue(s.text.startswith('[X]'))
 
+        result = models.ToDo.list_whose('raa0121', status=False)
+        self.assertEqual(1, len([r for r in result]))
         result = models.ToDo.list_whose('raa0121', status=True)
         self.assertEqual(2, len([r for r in result]))
-
-        self.assertTrue(s.text.startswith('[X]'))
+        result = models.ToDo.list_whose('bgnori', status=False)
+        self.assertEqual(1, len([r for r in result]))
+        result = models.ToDo.list_whose('bgnori', status=True)
+        self.assertEqual(1, len([r for r in result]))
 
 
     def test_del(self):
-        req = """{"events":[{"message":{"text":"#todo del 2","speaker_id":"raa0121","room":"computer_science"}}]}"""
+        req = self.raa0121.say('#todo done 2')
         event = json.loads(req)['events'][0]
         s = self.bot.on_json(event)
-
 
         result = models.ToDo.list_whose('raa0121', status=False)
         self.assertEqual(1, len([r for r in result]))
         result = models.ToDo.list_whose('bgnori', status=False)
         self.assertEqual(1, len([r for r in result]))
 
-
     def test_show(self):
-        req = """{"events":[{"message":{"text":"#todo show 3","speaker_id":"raa0121","room":"computer_science"}}]}"""
+        req = self.raa0121.say('#todo show 3')
+
         event = json.loads(req)['events'][0]
         s = self.bot.on_json(event)
 
@@ -188,7 +201,7 @@ class ToDoBotTestCase(unittest.TestCase):
         self.assertEqual(0, len([x for x in xs if x.startswith('[_]')]))
 
     def test_about(self):
-        req = """{"events":[{"message":{"text":"#todo about","speaker_id":"raa0121","room":"computer_science"}}]}"""
+        req = self.raa0121.say('#todo about')
         event = json.loads(req)['events'][0]
         s = self.bot.on_json(event)
 
