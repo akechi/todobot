@@ -1,0 +1,50 @@
+
+
+end point
+http://ujm.chickenkiller.com:9280/python/todo.py
+
+
+
+Schemaの変更案
+
+現状
+ ToDo / TODO
+
+変更後
+ User
+  - username: String
+  - primary group: Group   (username == groupname)
+  - groups
+  - auth: ... to be determined.
+
+ Group
+  - groupname: String
+  - users
+
+ UGMapping
+  - user: User
+  - group: Group
+
+ History
+  - at: DateTime
+  - by: User
+  - field: String
+  - old: Value
+  - new: Value
+
+ Task
+  - history: Foreignkey(History)
+  - owner: Group
+  - description: String
+  - hash: String
+
+
+ ACL
+  - on: Group
+  - allow: Group
+  - action: Action
+ 
+ Action
+  - actionname: String
+
+
