@@ -19,6 +19,10 @@ class ToDoBotTestCase(unittest.TestCase):
 
         conn = self.engine.connect()
         self.conn = conn
+        models.get_session = scoped_session(sessionmaker(bind=self.conn))
+        self.postman = Postman()
+        self.bot = ToDoBot(self.postman)
+
         with open('todo_schema.sql') as f:
             conn.execute(f.read())
 
@@ -35,9 +39,6 @@ class ToDoBotTestCase(unittest.TestCase):
             self.assertEqual('raa0121', r[1])
         self.assertEqual(1, i)
 
-        models.get_session = scoped_session(sessionmaker(bind=self.conn))
-        self.postman = Postman()
-        self.bot = ToDoBot(self.postman)
 
     def tearDown(self):
         self.engine.dispose()
