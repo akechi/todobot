@@ -9,6 +9,15 @@ Base = declarative_base()
 from sqlalchemy import Column, Integer, String, DateTime, Boolean
 
 
+get_session = None
+"""
+    User of this module MUST supply this.
+
+    Most cases, it should be scoped session.
+    http://docs.sqlalchemy.org/en/rel_0_8/orm/session.html#thread-local-scope
+"""
+
+
 class ToDo(Base):
     __tablename__ = 'TODO'
     id = Column(Integer, primary_key=True)
@@ -29,6 +38,14 @@ class ToDo(Base):
         s.append(self.description)
         return ' '.join(s)
 
+    @classmethod
+    def add(cls, **kw):
+        session = get_session()
+        obj = cls(**kw)
+        session.add(obj)
+        session.commit()
+        toget = obj.id
+        return session.query(ToDo).get(toget)
 
 if __name__ == '__main__':
     from sqlalchemy import create_engine

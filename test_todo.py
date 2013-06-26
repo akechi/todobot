@@ -1,23 +1,24 @@
 
 
 from todo.lingrbot import ToDoBot, Postman, prnformat
+from todo import models
 import unittest
 
 import json
 
 from sqlalchemy import create_engine
 from sqlalchemy.pool import QueuePool
+from sqlalchemy.orm import scoped_session
 from sqlalchemy.orm import sessionmaker
 
 
 class ToDoBotTestCase(unittest.TestCase):
     def setUp(self):
         self.engine = create_engine('sqlite:///:memory:', poolclass=QueuePool)
-        self.postman = Postman()
 
-        self.bot = ToDoBot(self.postman, sessionmaker(bind=self.engine))
 
         conn = self.engine.connect()
+        self.conn = conn
         with open('todo_schema.sql') as f:
             conn.execute(f.read())
 
@@ -33,6 +34,14 @@ class ToDoBotTestCase(unittest.TestCase):
         for i, r in enumerate(result):
             self.assertEqual('raa0121', r[1])
         self.assertEqual(1, i)
+
+        models.get_session = scoped_session(sessionmaker(bind=self.conn))
+        self.postman = Postman()
+        self.bot = ToDoBot(self.postman)
+
+    def tearDown(self):
+        self.engine.dispose()
+
 
 
     def test_get_handle_XXX(self):
@@ -68,7 +77,8 @@ class ToDoBotTestCase(unittest.TestCase):
         event = json.loads(req)['events'][0]
         s = self.bot.on_json(event)
 
-        conn = self.engine.connect()
+        #conn = self.conn
+        conn = self.conn
         result = conn.execute("select * from TODO where username = ? AND status = 0", ('raa0121',))
         self.assertEqual(3, len([r for r in result]))
 
@@ -78,7 +88,7 @@ class ToDoBotTestCase(unittest.TestCase):
         event = json.loads(req)['events'][0]
         s = self.bot.on_json(event)
 
-        conn = self.engine.connect()
+        conn = self.conn
         result = conn.execute("select * from TODO where username = ? AND status = 0", ('raa0121',))
         self.assertEqual(2, len([r for r in result]))
         result = conn.execute("select * from TODO where username = ? AND status = 0", ('bgnori',))
@@ -156,7 +166,7 @@ class ToDoBotTestCase(unittest.TestCase):
         s = self.bot.on_json(event)
 
 
-        conn = self.engine.connect()
+        conn = self.conn
         result = conn.execute("select * from TODO where username = ? AND status = 1", ('raa0121',))
         self.assertEqual(2, len([r for r in result]))
 
@@ -170,7 +180,7 @@ class ToDoBotTestCase(unittest.TestCase):
         s = self.bot.on_json(event)
 
 
-        conn = self.engine.connect()
+        conn = self.conn
         result = conn.execute("select * from TODO where username = ? AND status = 0", ('raa0121',))
         self.assertEqual(1, len([r for r in result]))
         result = conn.execute("select * from TODO where username = ? AND status = 0", ('bgnori',))

@@ -13,6 +13,9 @@ import hashlib
 from datetime import datetime
 
 from todo.models import ToDo
+from todo import models
+
+
 
 
 def prnformat(row):
@@ -88,8 +91,7 @@ class ToDoBot(object):
     prefix = 'handle_'
     adminnicks = set(['aoisensi'])
 
-    def __init__(self, postman, sessionclass):
-        self.sessionclass = sessionclass
+    def __init__(self, postman):
         self.postman = postman
 
 
@@ -104,7 +106,7 @@ class ToDoBot(object):
             return spool
         who = event['message']['speaker_id']
 
-        return self.handle(args[1], spool, who, *args[2:])
+        return self.handle(args[1], spool, who, *(args[2:]))
     
 
     def handle(self, cmd, spool, who, *args):
@@ -117,12 +119,7 @@ class ToDoBot(object):
         if method is None:
             spool.write('No such command, %s."'%(cmd,))
             return spool
-        
-        session = self.sessionclass()
-        try:
-            return method(spool, session, who, *args)
-        finally:
-            session.close()
+        return method(spool, who, *args)
 
 
     def is_admin(self, nickname):
@@ -136,7 +133,7 @@ class ToDoBot(object):
             if k.startswith(self.prefix):
                 yield k, getattr(self, k)
 
-    def handle_help(self, spool, session, who, on_what=None):
+    def handle_help(self, spool, who, on_what=None):
         """#todo help [command] ... if no command supplied, list all commands."""
         d = dict([(k, getattr(m, "__doc__", self.nohelp%(k,))) for k, m in self.get_handle_XXX()])
 
@@ -146,19 +143,17 @@ class ToDoBot(object):
             spool.write('\n'.join(list(d.values())) + self.help_postfix)
         return spool
 
-    def handle_add(self, spool, session, who, *descriptions):
+    def handle_add(self, spool, who, *descriptions):
         """#todo add [description]"""
         text = ' '.join(descriptions)
-        td = ToDo(username=who, description=text, created_at=datetime.now(), status=0)
-        session.add(td)
-        session.commit()
-        toget = td.id
-        td = session.query(ToDo).get(toget)
+        td = ToDo.add(username=who, description=text, created_at=datetime.now(), status=0)
+
         spool.add(td)
         return spool
 
-    def handle_addto(self, spool, session, who, nickname, *descriptions):
+    def handle_addto(self, spool, who, nickname, *descriptions):
         """#todo addto [nickname] [description]"""
+        session = models.get_session()
         text = ' '.join(descriptions)
         text += ' (by %s) ' % who #event['message']['speaker_id']
         td = ToDo(username=nickname, description=text, status=0)
@@ -167,22 +162,25 @@ class ToDoBot(object):
         spool.add(td.id)
         return spool
 
-    def handle_list_all(self, spool, session, who):
+    def handle_list_all(self, spool, who):
         """#todo list-all"""
+        session = models.get_session()
         for td in session.query(ToDo).filter(ToDo.username == who):
             spool.add(td)
         return spool
 
-    def handle_list_done(self, spool, session, who):
+    def handle_list_done(self, spool, who):
         """#todo list-done"""
+        session = models.get_session()
         for td in session.query(ToDo).\
                 filter(ToDo.username ==who).\
                 filter(ToDo.status == True):
             spool.add(td)
         return spool
 
-    def handle_list(self, spool, session, who):
+    def handle_list(self, spool, who):
         """#todo list"""
+        session = models.get_session()
         for td in session.query(ToDo).\
                 filter(ToDo.username == who).\
                 filter(ToDo.status == False):
@@ -190,15 +188,17 @@ class ToDoBot(object):
         spool.write('nothing found for %s'%(who,))
         return spool
 
-    def handle_listof_all(self, spool, session, who, whose):
+    def handle_listof_all(self, spool, who, whose):
         """#todo listof-all [nickname]"""
+        session = models.get_session()
         for td in session.query(ToDo).filter(ToDo.username == whose):
             spool.add(td)
         spool.write('nothing found for %s'%(whose,))
         return spool
 
-    def handle_listof_done(self, spool, session, who, whose):
+    def handle_listof_done(self, spool, who, whose):
         """#todo listof-done [nickname]"""
+        session = models.get_session()
         for td in session.query(ToDo).\
                 filter(ToDo.username == whose).\
                 filter(ToDo.status == True):
@@ -206,8 +206,9 @@ class ToDoBot(object):
         spool.write('nothing found for %s'%(whose,))
         return spool
 
-    def handle_listof(self, spool, session, who, whose):
+    def handle_listof(self, spool, who, whose):
         """#todo listof [nickname]"""
+        session = models.get_session()
         for td in session.query(ToDo).\
                 filter(ToDo.username == whose).\
                 filter(ToDo.status == False):
@@ -215,15 +216,17 @@ class ToDoBot(object):
         spool.write('nothing found for %s'%(whose,))
         return spool
 
-    def handle_list_everything(self, spool, session, who):
+    def handle_list_everything(self, spool, who):
         """#todo list-everything"""
+        session = models.get_session()
         for td in session.query(ToDo):
             spool.add(td)
         spool.write('nothing found for %s'%(who,))
         return spool
 
-    def handle_done(self, spool, session, who, which):
+    def handle_done(self, spool, who, which):
         """#todo done [id]"""
+        session = models.get_session()
         if not which.isdigit():
             spool.write("そもそも予定じゃない")
             return spool
@@ -239,8 +242,9 @@ class ToDoBot(object):
             spool.write("それはお前の予定じゃない")
         return spool
 
-    def handle_del(self, spool, session, who, which):
+    def handle_del(self, spool, who, which):
         """#todo del [id]"""
+        session = models.get_session()
         if not which.isdigit():
             spool.write("そもそも予定じゃない")
             return spool
@@ -256,8 +260,9 @@ class ToDoBot(object):
             spool.write("それはお前の予定じゃない")
         return spool
 
-    def handle_show(self, spool, session, who, which):
+    def handle_show(self, spool, who, which):
         """#todo show [id]"""
+        session = models.get_session()
         if not which.isdigit():
             spool.write("そもそも予定じゃない")
             return spool
@@ -268,8 +273,9 @@ class ToDoBot(object):
             spool.add(found)
         return spool
 
-    def handle_sudodel(self, spool, session, who, which):
+    def handle_sudodel(self, spool, who, which):
         """#todo sudodel [id]"""
+        session = models.get_session()
         if not which.isdigit():
             spool.write("そもそも予定じゃない")
             return spool
@@ -285,16 +291,18 @@ class ToDoBot(object):
             spool.write('削除したよ')
         return spool
 
-    def handle_debug(self, spool, session, who, which):
+    def handle_debug(self, spool, who, which):
         """#todo debug [id]"""
+        session = models.get_session()
         if self.is_admin(who):
             if(which.isdigit()):
                 result = session.execute("select (username) from TODO where id = ?", (which,))
                 spool.write(str(result.fetchone()))
         return spool
 
-    def handle_about(self, spool, session, who):
+    def handle_about(self, spool, who):
         """#todo about"""
+        session = models.get_session()
         spool.write("To Do Bot\n")
         spool.write('on ' + sys.version + '\n')
         spool.write("It provides task management feature to lingr room.\n")
