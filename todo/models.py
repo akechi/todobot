@@ -1,6 +1,8 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
+from datetime import datetime
+import json
 
 from sqlalchemy.ext.declarative import declarative_base
 
@@ -30,6 +32,24 @@ class ToDo(Base):
     description = Column(String)
     created_at = Column(DateTime) # why failed to map "datetime('now', 'localtime')" of sqlite
     status = Column(Boolean)
+
+    def to_json(self):
+        j = json.dumps(dict(
+            id=self.id, 
+            username=self.username, 
+            description=self.description,
+            created_at=str(self.created_at), # 2013-06-23 22:11:18
+            status=self.status))
+        return j
+
+    @classmethod
+    def from_json(cls, s):
+        d = json.loads(s)
+        try:
+            d['created_at'] = datetime.strptime(d['created_at'],  "%Y-%m-%d %H:%M:%S")
+        except:
+            d['created_at'] = None
+        return cls.add(**d)
 
     def prnformat(self):
         s = []
