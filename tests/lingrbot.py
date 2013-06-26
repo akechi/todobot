@@ -52,6 +52,7 @@ class ToDoBotTestCase(unittest.TestCase):
 
         self.assertIn('handle_done', d)
         self.assertIn('handle_help', d)
+        self.assertEqual(d['handle_add'], "#todo add [description]")
         self.assertEqual("""#todo done [id]""", d['handle_done'])
 
 
@@ -60,7 +61,7 @@ class ToDoBotTestCase(unittest.TestCase):
         event = json.loads(req)['events'][0]
         s = self.bot.on_json(event)
 
-        xs = s.text.splitlines()
+        xs = [x for x in s.render_for_lingr(500)][0].splitlines()
         self.assertIn('#todo done [id]', xs)
         self.assertIn('#todo show [id]', xs)
 
@@ -70,9 +71,10 @@ class ToDoBotTestCase(unittest.TestCase):
         event = json.loads(req)['events'][0]
         s = self.bot.on_json(event)
 
-        xs = s.text.splitlines()
+        xs = [x for x in s.render_for_lingr(500)][0].splitlines()
         self.assertIn('#todo done [id]', xs)
         self.assertNotIn('#todo show [id]', xs)
+
 
     def test_add(self):
         req = self.raa0121.say('#todo add test_add')
