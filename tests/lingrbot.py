@@ -15,6 +15,19 @@ from todo import models
 
 from mocks import LingrUser
 
+
+def flatten_iter(xxs):
+    for xs in xxs:
+        if isinstance(xs, list):
+            for x in xs:
+                yield x
+        else:
+            yield xs
+
+def flatten(xxs):
+    return list(flatten_iter(xxs))
+
+
 class ToDoBotTestCase(unittest.TestCase):
     def setUp(self):
         self.engine = create_engine('sqlite:///:memory:', poolclass=QueuePool)
@@ -60,7 +73,7 @@ class ToDoBotTestCase(unittest.TestCase):
         event = json.loads(req)['events'][0]
         s = self.bot.on_json(event)
 
-        xs = [x for x in s.render_for_lingr(500)][0].splitlines()
+        xs = flatten([x.splitlines() for x in s.render_for_lingr(500)])
         self.assertIn('No such command, foobar.', xs)
 
     def test_help(self):
@@ -68,7 +81,7 @@ class ToDoBotTestCase(unittest.TestCase):
         event = json.loads(req)['events'][0]
         s = self.bot.on_json(event)
 
-        xs = [x for x in s.render_for_lingr(500)][0].splitlines()
+        xs = flatten([x.splitlines() for x in s.render_for_lingr(500)])
         self.assertIn('#todo done [id]', xs)
         self.assertIn('#todo show [id]', xs)
 
@@ -78,7 +91,7 @@ class ToDoBotTestCase(unittest.TestCase):
         event = json.loads(req)['events'][0]
         s = self.bot.on_json(event)
 
-        xs = [x for x in s.render_for_lingr(500)][0].splitlines()
+        xs = flatten([x.splitlines() for x in s.render_for_lingr(500)])
         self.assertIn('#todo done [id]', xs)
         self.assertNotIn('#todo show [id]', xs)
 
@@ -88,7 +101,7 @@ class ToDoBotTestCase(unittest.TestCase):
         s = self.bot.on_json(event)
 
 
-        xs = [x for x in s.render_for_lingr(500)][0].splitlines()
+        xs = flatten([x.splitlines() for x in s.render_for_lingr(500)])
         self.assertIn('#todo done [id]', xs)
         self.assertIn('#todo show [id]', xs)
 

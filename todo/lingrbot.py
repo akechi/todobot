@@ -34,17 +34,16 @@ class Spool(object):
 
     def render_for_lingr(self, size):
         if self.rows:
-            buf = []
-            for next in self.rows:
-                assert isinstance(next, ToDo)
-                next = next.prnformat()
-                if buf and sum([len(line) + 1 for line in buf]) + len(next) > size:
-                    yield '\n'.join(buf)
-                    buf = []
-                buf.append(next)
-            yield '\n'.join(buf)
+            self.rows = [r.prnformat() for r in self.rows]
         else:
-            yield self.text
+            self.rows = [line for line in self.text.splitlines()]
+        buf = []
+        for next in self.rows:
+            if buf and sum([len(line) + 1 for line in buf]) + len(next) > size:
+                yield '\n'.join(buf)
+                buf = []
+            buf.append(next)
+        yield '\n'.join(buf)
 
 
 class Postman(object):
