@@ -65,7 +65,8 @@ def addto(parent):
 def help(parent):
     """#todo help [command] ... if no command supplied, list all commands."""
     name = make_path(parent, "help")
-    return r"(?P<%s>help"%(name,) + OpCat(ws, command)(name) + ")"
+    return r"(?P<%s>help"%(name,) + Option(ws)(name) \
+        + OpCat(ws, command, OpCat(ws, blackhole))(name) + ")"
 
 
 

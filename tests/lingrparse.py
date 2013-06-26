@@ -32,13 +32,13 @@ class ParseTestCase(unittest.TestCase):
     def test_no_command(self):
         found = parse("#todo")
         self.assertIsNotNone(found)
-        self.assertIn('_sharptodo' ,found)
+        self.assertHasNotNone(found, '_sharptodo')
 
     def test_about(self):
         found = parse("#todo about")
         self.assertIsNotNone(found)
-        self.assertIn('_sharptodo', found)
-        self.assertIn('_about', found)
+        self.assertHasNotNone(found, '_sharptodo')
+        self.assertHasNotNone(found, '_about')
 
     def test_about_blackhole(self):
         found = parse("#todo about xhaxeha foabar")
@@ -103,6 +103,35 @@ class ParseTestCase(unittest.TestCase):
         self.assertHas(found, '_addto_nickname', 'who')
         self.assertHasNone(found, '_addto_description')
 
+    def test_help(self):
+        found = parse("#todo help")
+        self.assertIsNotNone(found)
+        self.assertHasNotNone(found, '_sharptodo')
+        self.assertHasNotNone(found, '_help')
+        self.assertHasNone(found, '_help_command')
+
+    def test_help_with_space(self):
+        found = parse("#todo help ")
+        self.assertIsNotNone(found)
+        self.assertHasNotNone(found, '_sharptodo')
+        self.assertHasNotNone(found, '_help')
+        self.assertHasNone(found, '_help_command')
+
+    def test_help_xxx(self):
+        found = parse("#todo help xxx")
+        self.assertIsNotNone(found)
+        self.assertHasNotNone(found, '_sharptodo')
+        self.assertHasNotNone(found, '_help')
+        self.assertHasNotNone(found, '_help_command')
+        self.assertHas(found, '_help_command', 'xxx')
+
+    def test_help_xxx_with_space(self):
+        found = parse("#todo help xxx ")
+        self.assertIsNotNone(found)
+        self.assertHasNotNone(found, '_sharptodo')
+        self.assertHasNotNone(found, '_help')
+        self.assertHasNotNone(found, '_help_command')
+        self.assertHas(found, '_help_command', 'xxx')
 
 
 if __name__ == '__main__':
