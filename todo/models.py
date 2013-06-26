@@ -47,6 +47,39 @@ class ToDo(Base):
         toget = obj.id
         return session.query(ToDo).get(toget)
 
+    @classmethod
+    def get(self, which):
+        session = get_session()
+        return session.query(ToDo).get(which)
+    
+    def done(self):
+        session = get_session()
+        self.status = True
+        session.add(self)
+        session.commit()
+
+    def delete(self):
+        session = get_session()
+        session.delete(self)
+        session.commit()
+
+    @classmethod
+    def list_whose(cls, whose, status=None):
+        session = get_session()
+        if status is None:
+            return session.query(ToDo).filter(ToDo.username == whose)
+        else:
+            return session.query(ToDo).\
+                    filter(ToDo.username == whose).\
+                    filter(ToDo.status == status)
+
+    @classmethod
+    def list_all(cls):
+        session = get_session()
+        return session.query(ToDo)
+
+
+
 
 
 if __name__ == '__main__':
