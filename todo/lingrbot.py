@@ -18,19 +18,6 @@ from todo import models
 
 
 
-def prnformat(row):
-    s = []
-    if(row[4] != 0):
-        s.append('[X]')
-    else:
-        s.append('[_]')
-    s.append("%04d" % row[0])
-    s.append(row[1])
-    s.append(row[2])
-    s.append(row[3])
-    return ' '.join(s)
-
-
 class Spool(object):
     buffering_size = 500 #byte
 
