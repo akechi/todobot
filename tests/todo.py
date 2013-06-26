@@ -1,214 +1,141 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
-
-from todo.lingrbot import ToDoBot, Postman 
-from todo import models
-
-
-from mocks import LingrUser
-
-
 import unittest
 
-import json
+from datetime import datetime
 
 from sqlalchemy import create_engine
 from sqlalchemy.pool import QueuePool
 from sqlalchemy.orm import scoped_session
 from sqlalchemy.orm import sessionmaker
 
-from datetime import datetime
+from todo import models
 
-class ToDoBotTestCase(unittest.TestCase):
+
+J2000 = datetime(2000, 1, 1, 12, 00, 00)
+
+
+
+class ToDoTestCase(unittest.TestCase):
     def setUp(self):
         self.engine = create_engine('sqlite:///:memory:', poolclass=QueuePool)
-
-
         conn = self.engine.connect()
         self.conn = conn
         models.get_session = scoped_session(sessionmaker(bind=self.conn))
-        self.postman = Postman()
-        self.bot = ToDoBot(self.postman)
-    
         models.make_tables()
 
-        models.ToDo.add(username='raa0121', description='test data 1',
-                created_at=datetime.now(), status = False)
-        models.ToDo.add(username='raa0121', description='test data 2',
-                created_at=datetime.now(), status = False)
-        models.ToDo.add(username='raa0121', description='test data 3',
-                created_at=datetime.now(), status = True)
-        models.ToDo.add(username='bgnori', description='test data 4',
-                created_at=datetime.now(), status = False)
-        models.ToDo.add(username='bgnori', description='test data 5',
-                created_at=datetime.now(), status = True)
+    def test_sanity(self):
+        td = models.ToDo(username='username', description='description', created_at=J2000, status=False)
+        self.assertEqual("username", td.username)
+        self.assertEqual("description", td.description)
+        self.assertEqual(J2000, td.created_at)
+        self.assertEqual(False, td.status)
 
-        self.raa0121 = LingrUser('raa0121')
+    def test_prnformat(self):
+        s = models.get_session()
+        td = models.ToDo(username='username', description='description', created_at=J2000, status=False)
+        s.add(td)
+        s.commit()
 
+        x = td.prnformat()
+        self.assertEqual('[_] 0001 username 2000-01-01 12:00:00 description', x)
 
-    def tearDown(self):
-        self.engine.dispose()
+        s = models.get_session()
+        td2 = models.ToDo(username='username', description='description', created_at=J2000, status=True)
+        s.add(td2)
+        s.commit()
 
+        y = td2.prnformat()
+        self.assertEqual('[X] 0002 username 2000-01-01 12:00:00 description', y)
 
-    def test_get_handle_XXX(self):
-        bot = self.bot
-        d = dict([(k, getattr(m, "__doc__", bot.nohelp%(k,))) for k, m in bot.get_handle_XXX()])
-
-        self.assertIn('handle_done', d)
-        self.assertIn('handle_help', d)
-        self.assertEqual("""#todo done [id]""", d['handle_done'])
-
-
-    def test_help(self):
-        req = self.raa0121.say('#todo help')
-        event = json.loads(req)['events'][0]
-        s = self.bot.on_json(event)
-
-        xs = s.text.splitlines()
-        self.assertIn('#todo done [id]', xs)
-        self.assertIn('#todo show [id]', xs)
-
-
-    def test_help_arg(self):
-        req = self.raa0121.say('#todo help done')
-        event = json.loads(req)['events'][0]
-        s = self.bot.on_json(event)
-
-        xs = s.text.splitlines()
-        self.assertIn('#todo done [id]', xs)
-        self.assertNotIn('#todo show [id]', xs)
 
     def test_add(self):
-        req = self.raa0121.say('#todo add test_add')
-        event = json.loads(req)['events'][0]
-        s = self.bot.on_json(event)
+        td = models.ToDo.add(username='username', description='description', created_at=J2000, status=True)
 
-        result = models.ToDo.list_whose('raa0121', status=False)
-        self.assertEqual(3, len([r for r in result]))
+        y = td.prnformat()
+        self.assertEqual('[X] 0001 username 2000-01-01 12:00:00 description', y)
 
+    def test_get(self):
+        models.ToDo.add(username='username', description='description', created_at=J2000, status=True)
 
-    def test_addto(self):
-        req = self.raa0121.say('#todo addto bgnori test_add')
-        event = json.loads(req)['events'][0]
-        s = self.bot.on_json(event)
+        s = models.get_session()
+        td = models.ToDo.get(1)
 
-        result = models.ToDo.list_whose('raa0121', status=False)
-        self.assertEqual(2, len([r for r in result]))
-        result = models.ToDo.list_whose('bgnori', status=False)
-        self.assertEqual(2, len([r for r in result]))
-
-
-    def test_list_all(self):
-        req = self.raa0121.say('#todo list-all')
-        event = json.loads(req)['events'][0]
-        s = self.bot.on_json(event)
-
-        xs = [r.prnformat() for r in s.rows]
-        self.assertEqual(1, len([x for x in xs if x.startswith('[X]')]))
-        self.assertEqual(2, len([x for x in xs if x.startswith('[_]')]))
-
-
-    def test_list_done(self):
-        req = self.raa0121.say('#todo list-done')
-        event = json.loads(req)['events'][0]
-        s = self.bot.on_json(event)
-
-        xs = [r.prnformat() for r in s.rows]
-        self.assertEqual(1, len([x for x in xs if x.startswith('[X]')]))
-        self.assertEqual(0, len([x for x in xs if x.startswith('[_]')]))
-
-    def test_list(self):
-        req = self.raa0121.say('#todo list')
-        event = json.loads(req)['events'][0]
-        s = self.bot.on_json(event)
-
-        xs = [r.prnformat() for r in s.rows]
-        self.assertEqual(0, len([x for x in xs if x.startswith('[X]')]))
-        self.assertEqual(2, len([x for x in xs if x.startswith('[_]')]))
-
-    def test_listof_all(self):
-        req = self.raa0121.say('#todo listof-all bgnori')
-        event = json.loads(req)['events'][0]
-        s = self.bot.on_json(event)
-
-        xs = [r.prnformat() for r in s.rows]
-        self.assertEqual(1, len([x for x in xs if x.startswith('[X]')]))
-        self.assertEqual(1, len([x for x in xs if x.startswith('[_]')]))
-
-    def test_listof_done(self):
-        req = self.raa0121.say('#todo listof-done bgnori')
-        event = json.loads(req)['events'][0]
-        s = self.bot.on_json(event)
-
-        xs = [r.prnformat() for r in s.rows]
-        self.assertEqual(1, len([x for x in xs if x.startswith('[X]')]))
-        self.assertEqual(0, len([x for x in xs if x.startswith('[_]')]))
-
-    def test_listof(self):
-        req = self.raa0121.say('#todo listof bgnori')
-        event = json.loads(req)['events'][0]
-        s = self.bot.on_json(event)
-
-        xs = [r.prnformat() for r in s.rows]
-        self.assertEqual(0, len([x for x in xs if x.startswith('[X]')]))
-        self.assertEqual(1, len([x for x in xs if x.startswith('[_]')]))
-
-
-    def test_list_everything(self):
-        req = self.raa0121.say('#todo list-everything')
-        event = json.loads(req)['events'][0]
-        s = self.bot.on_json(event)
-
-        xs = [r.prnformat() for r in s.rows]
-        self.assertEqual(3, len([x for x in xs if x.startswith('[_]')]))
-        self.assertEqual(2, len([x for x in xs if x.startswith('[X]')]))
+        y = td.prnformat()
+        self.assertEqual('[X] 0001 username 2000-01-01 12:00:00 description', y)
 
     def test_done(self):
-        req = self.raa0121.say('#todo done 1')
-        event = json.loads(req)['events'][0]
-        s = self.bot.on_json(event)
-        self.assertTrue(s.text.startswith('[X]'))
+        td = models.ToDo.add(username='username', description='description', created_at=J2000, status=False)
+        td.done()
 
-        result = models.ToDo.list_whose('raa0121', status=False)
-        self.assertEqual(1, len([r for r in result]))
-        result = models.ToDo.list_whose('raa0121', status=True)
-        self.assertEqual(2, len([r for r in result]))
-        result = models.ToDo.list_whose('bgnori', status=False)
-        self.assertEqual(1, len([r for r in result]))
-        result = models.ToDo.list_whose('bgnori', status=True)
-        self.assertEqual(1, len([r for r in result]))
+        y = td.prnformat()
+        self.assertEqual('[X] 0001 username 2000-01-01 12:00:00 description', y)
 
+    def test_delete(self):
+        td = models.ToDo.add(username='username', description='description', created_at=J2000, status=False)
+        td.delete()
 
-    def test_del(self):
-        req = self.raa0121.say('#todo done 2')
-        event = json.loads(req)['events'][0]
-        s = self.bot.on_json(event)
+        self.assertIsNone(models.ToDo.get(1))
 
-        result = models.ToDo.list_whose('raa0121', status=False)
-        self.assertEqual(1, len([r for r in result]))
-        result = models.ToDo.list_whose('bgnori', status=False)
-        self.assertEqual(1, len([r for r in result]))
+    def test_list_whose_no_kw(self):
+        models.ToDo.add(username='username', description='task 1', created_at=J2000, status=False)
+        models.ToDo.add(username='username', description='task 2', created_at=J2000, status=False)
+        models.ToDo.add(username='username', description='task 3', created_at=J2000, status=True)
+        models.ToDo.add(username='username2', description='description', created_at=J2000, status=False)
 
-    def test_show(self):
-        req = self.raa0121.say('#todo show 3')
+        xs = models.ToDo.list_whose('username')
+        ys = [x.description for x in xs]
 
-        event = json.loads(req)['events'][0]
-        s = self.bot.on_json(event)
+        self.assertIn('task 1', ys)
+        self.assertIn('task 2', ys)
+        self.assertIn('task 3', ys)
+        self.assertNotIn('description', ys)
 
-        xs = [r.prnformat() for r in s.rows]
-        self.assertEqual(1, len([x for x in xs if x.startswith('[X]')]))
-        self.assertEqual(0, len([x for x in xs if x.startswith('[_]')]))
+    def test_list_whose_status_True(self):
+        models.ToDo.add(username='username', description='task 1', created_at=J2000, status=False)
+        models.ToDo.add(username='username', description='task 2', created_at=J2000, status=False)
+        models.ToDo.add(username='username', description='task 3', created_at=J2000, status=True)
+        models.ToDo.add(username='username2', description='description', created_at=J2000, status=False)
 
-    def test_about(self):
-        req = self.raa0121.say('#todo about')
-        event = json.loads(req)['events'][0]
-        s = self.bot.on_json(event)
+        xs = models.ToDo.list_whose('username', status=True)
+        ys = [x.description for x in xs]
 
-        xs = s.text.splitlines()
-        self.assertIn("It provides task management feature to lingr room.", xs)
-        self.assertIn("see https://github.com/akechi/todobot", xs)
+        self.assertNotIn('task 1', ys)
+        self.assertNotIn('task 2', ys)
+        self.assertIn('task 3', ys)
+        self.assertNotIn('description', ys)
+
+    def test_list_whose_status_False(self):
+        models.ToDo.add(username='username', description='task 1', created_at=J2000, status=False)
+        models.ToDo.add(username='username', description='task 2', created_at=J2000, status=False)
+        models.ToDo.add(username='username', description='task 3', created_at=J2000, status=True)
+        models.ToDo.add(username='username2', description='description', created_at=J2000, status=False)
+
+        xs = models.ToDo.list_whose('username', status=False)
+        ys = [x.description for x in xs]
+
+        self.assertIn('task 1', ys)
+        self.assertIn('task 2', ys)
+        self.assertNotIn('task 3', ys)
+        self.assertNotIn('description', ys)
+
+    def test_list_all(self):
+        models.ToDo.add(username='username', description='task 1', created_at=J2000, status=False)
+        models.ToDo.add(username='username', description='task 2', created_at=J2000, status=False)
+        models.ToDo.add(username='username', description='task 3', created_at=J2000, status=True)
+        models.ToDo.add(username='username2', description='description', created_at=J2000, status=False)
+
+        xs = models.ToDo.list_all()
+        ys = [x.description for x in xs]
+
+        self.assertIn('task 1', ys)
+        self.assertIn('task 2', ys)
+        self.assertIn('task 3', ys)
+        self.assertIn('description', ys)
+
 
 if __name__ == '__main__':
     unittest.main()
+
 

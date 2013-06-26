@@ -1,7 +1,10 @@
 
 
 
-test: todo/lingrbot.py tests/todo.py freeze.txt setup.sh
+test-lingrbot:
+	python3.3 -m tests.lingrbot
+
+test-todo:
 	python3.3 -m tests.todo
 
 update: setup.sh freeze.txt
