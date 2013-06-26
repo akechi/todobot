@@ -210,6 +210,23 @@ class ToDoBot(object):
             spool.write("それはお前の予定じゃない")
         return spool
 
+    def handle_edit(self, spool, who, which, *description):
+        """#todo edit [id] [new description]"""
+        description = ' '.join(description)
+        if not which.isdigit():
+            spool.write("そもそも予定じゃない")
+            return spool
+        found = ToDo.get(int(which))
+        if found is None:
+            spool.write("そんな予定はない")
+            return spool
+        if found.username.startswith('@') or found.username == who:
+            found.edit(description=description)
+            spool.write(found.prnformat())
+        else:
+            spool.write("それはお前の予定じゃない")
+        return spool
+
     def handle_del(self, spool, who, which):
         """#todo del [id]"""
         if not which.isdigit():

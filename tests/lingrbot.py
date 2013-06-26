@@ -206,6 +206,13 @@ class ToDoBotTestCase(unittest.TestCase):
         self.assertEqual(1, len([r for r in result]))
 
 
+    def test_edit(self):
+        req = self.raa0121.say('#todo edit 1 testing edit')
+        event = json.loads(req)['events'][0]
+        s = self.bot.on_json(event)
+        t = ''.join(s.render_for_lingr(500))
+        self.assertIn("testing edit", t)
+
     def test_del(self):
         req = self.raa0121.say('#todo done 2')
         event = json.loads(req)['events'][0]
