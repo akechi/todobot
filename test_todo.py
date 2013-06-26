@@ -75,9 +75,7 @@ class ToDoBotTestCase(unittest.TestCase):
         event = json.loads(req)['events'][0]
         s = self.bot.on_json(event)
 
-        #conn = self.conn
-        conn = self.conn
-        result = conn.execute("select * from TODO where username = ? AND status = 0", ('raa0121',))
+        result = models.ToDo.list_whose('raa0121', status=False)
         self.assertEqual(3, len([r for r in result]))
 
 
@@ -86,10 +84,9 @@ class ToDoBotTestCase(unittest.TestCase):
         event = json.loads(req)['events'][0]
         s = self.bot.on_json(event)
 
-        conn = self.conn
-        result = conn.execute("select * from TODO where username = ? AND status = 0", ('raa0121',))
+        result = models.ToDo.list_whose('raa0121', status=False)
         self.assertEqual(2, len([r for r in result]))
-        result = conn.execute("select * from TODO where username = ? AND status = 0", ('bgnori',))
+        result = models.ToDo.list_whose('bgnori', status=False)
         self.assertEqual(2, len([r for r in result]))
 
 
@@ -163,11 +160,8 @@ class ToDoBotTestCase(unittest.TestCase):
         event = json.loads(req)['events'][0]
         s = self.bot.on_json(event)
 
-
-        conn = self.conn
-        result = conn.execute("select * from TODO where username = ? AND status = 1", ('raa0121',))
+        result = models.ToDo.list_whose('raa0121', status=True)
         self.assertEqual(2, len([r for r in result]))
-
 
         self.assertTrue(s.text.startswith('[X]'))
 
@@ -178,10 +172,9 @@ class ToDoBotTestCase(unittest.TestCase):
         s = self.bot.on_json(event)
 
 
-        conn = self.conn
-        result = conn.execute("select * from TODO where username = ? AND status = 0", ('raa0121',))
+        result = models.ToDo.list_whose('raa0121', status=False)
         self.assertEqual(1, len([r for r in result]))
-        result = conn.execute("select * from TODO where username = ? AND status = 0", ('bgnori',))
+        result = models.ToDo.list_whose('bgnori', status=False)
         self.assertEqual(1, len([r for r in result]))
 
 
