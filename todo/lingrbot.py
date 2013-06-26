@@ -104,7 +104,7 @@ class ToDoBot(object):
 
         method = getattr(self, command, None)
         if method is None:
-            spool.write('No such command, %s."'%(cmd,))
+            spool.write('No such command, %s.'%(cmd,))
             return spool
         return method(spool, who, *args)
 

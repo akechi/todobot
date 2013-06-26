@@ -55,6 +55,13 @@ class ToDoBotTestCase(unittest.TestCase):
         self.assertEqual(d['handle_add'], "#todo add [description]")
         self.assertEqual("""#todo done [id]""", d['handle_done'])
 
+    def test_bad_command(self):
+        req = self.raa0121.say('#todo foobar')
+        event = json.loads(req)['events'][0]
+        s = self.bot.on_json(event)
+
+        xs = [x for x in s.render_for_lingr(500)][0].splitlines()
+        self.assertIn('No such command, foobar.', xs)
 
     def test_help(self):
         req = self.raa0121.say('#todo help')
@@ -75,6 +82,15 @@ class ToDoBotTestCase(unittest.TestCase):
         self.assertIn('#todo done [id]', xs)
         self.assertNotIn('#todo show [id]', xs)
 
+    def test_help_bad_arg(self):
+        req = self.raa0121.say('#todo help foo')
+        event = json.loads(req)['events'][0]
+        s = self.bot.on_json(event)
+
+
+        xs = [x for x in s.render_for_lingr(500)][0].splitlines()
+        self.assertIn('#todo done [id]', xs)
+        self.assertIn('#todo show [id]', xs)
 
     def test_add(self):
         req = self.raa0121.say('#todo add test_add')
