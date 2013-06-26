@@ -68,6 +68,14 @@ class ToDo(Base):
         session.delete(self)
         session.commit()
 
+    def edit(self, **kw):
+        session = get_session()
+        for k, v in kw.items():
+            setattr(self, k, v)
+        session.add(self)
+        session.commit()
+        return self
+
     @classmethod
     def list_whose(cls, whose, status=None):
         session = get_session()

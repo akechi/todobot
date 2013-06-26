@@ -134,6 +134,13 @@ class ToDoTestCase(unittest.TestCase):
         self.assertIn('task 3', ys)
         self.assertIn('description', ys)
 
+    def test_edit(self):
+        td = models.ToDo.add(username='username', description='description', created_at=J2000, status=True)
+        td = td.edit(description='yet another description')
+
+        y = td.prnformat()
+        self.assertEqual('[X] 0001 username 2000-01-01 12:00:00 yet another description', y)
+
 
 if __name__ == '__main__':
     unittest.main()
