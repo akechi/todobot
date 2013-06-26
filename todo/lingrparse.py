@@ -57,16 +57,15 @@ def add(parent):
     name = make_path(parent, "add")
     return r"(?P<%s>add"%(name,) + OpCat(ws, description)(name) + ")"
 
-
 def addto(parent):
     name = make_path(parent, "addto")
-    return r"(?P<%s>addto"%(name,) + OpCat(ws, nickname, OpCat(ws, description))(name) + ")"
-
+    return r"(?P<%s>addto"%(name,) + Option(ws)(name) \
+        + OpCat(nickname, Option(ws), OpCat(ws, description))(name) + ")"
 
 def help(parent):
     """#todo help [command] ... if no command supplied, list all commands."""
     name = make_path(parent, "help")
-    return r"(?P<%s>help"%(name,) + ws(name) + command(name) + ")"
+    return r"(?P<%s>help"%(name,) + OpCat(ws, command)(name) + ")"
 
 
 
@@ -102,4 +101,6 @@ def parse(text):
     if m is not None:
         m = m.groupdict()
     return m
+
+
 

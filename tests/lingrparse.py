@@ -8,6 +8,15 @@ from todo.lingrparse import parse
 
 class ParseTestCase(unittest.TestCase):
 
+    def assertHasNotNone(self, d, k):
+        self.assertIsNotNone(d[k])
+
+    def assertHasNone(self, d, k):
+        self.assertIsNone(d[k])
+
+    def assertHas(self, d, k, v):
+        self.assertEqual(d[k], v)
+
     def test_bad_1(self):
         found = parse("hello, world!")
         self.assertIsNone(found)
@@ -34,27 +43,68 @@ class ParseTestCase(unittest.TestCase):
     def test_about_blackhole(self):
         found = parse("#todo about xhaxeha foabar")
         self.assertIsNotNone(found)
-        self.assertIn('_sharptodo', found)
-        self.assertIn('_about', found)
+        self.assertHasNotNone(found, '_sharptodo')
+        self.assertHasNotNone(found, '_about')
 
     def test_add(self):
         found = parse("#todo add foo")
         self.assertIsNotNone(found)
-        self.assertIn('_sharptodo', found)
-        self.assertIn('_add', found)
-        self.assertIn('_add_description', found)
+        self.assertHasNotNone(found, '_sharptodo')
+        self.assertHasNotNone(found, '_add')
+        self.assertHasNotNone(found, '_add_description')
         self.assertEqual('foo', found['_add_description'])
+
+    def test_add_no_description(self):
+        found = parse("#todo add")
+        self.assertIsNotNone(found)
+        self.assertHasNotNone(found, '_sharptodo')
+        self.assertHasNotNone(found, '_add')
+        self.assertHasNone(found, '_add_description')
 
     def test_addto(self):
         found = parse("#todo addto who bar")
         self.assertIsNotNone(found)
-        self.assertIn('_sharptodo', found)
-        self.assertIn('_addto', found)
-        self.assertIn('_addto_nickname', found)
-        self.assertEqual('who', found['_addto_nickname'])
-        self.assertIn('_addto_description', found)
-        self.assertEqual('bar', found['_addto_description'])
+        self.assertHasNotNone(found, '_sharptodo')
+        self.assertHasNotNone(found, '_addto')
+        self.assertHasNotNone(found, '_addto_nickname')
+        self.assertHas(found, '_addto_nickname', 'who')
+        self.assertHasNotNone(found, '_addto_description')
+        self.assertHas(found, '_addto_description', 'bar')
+
+    def test_addto_no_nickname(self):
+        found = parse("#todo addto")
+        self.assertIsNotNone(found)
+        self.assertHasNotNone(found, '_sharptodo')
+        self.assertHasNotNone(found, '_addto')
+        self.assertHasNone(found, '_addto_nickname')
+        self.assertHasNone(found, '_addto_description')
+
+    def test_addto_no_nickname_with_space(self):
+        found = parse("#todo addto ")
+        self.assertIsNotNone(found)
+        self.assertHasNotNone(found, '_sharptodo')
+        self.assertHasNotNone(found, '_addto')
+        self.assertHasNone(found, '_addto_nickname')
+        self.assertHasNone(found, '_addto_description')
+
+    def test_addto_no_description(self):
+        found = parse("#todo addto who")
+        self.assertHasNotNone(found, '_sharptodo')
+        self.assertHasNotNone(found, '_addto')
+        self.assertHasNotNone(found, '_addto_nickname')
+        self.assertHas(found, '_addto_nickname', 'who')
+        self.assertHasNone(found, '_addto_description')
+
+    def test_addto_no_description_with_space(self):
+        found = parse("#todo addto who ")
+        self.assertHasNotNone(found, '_sharptodo')
+        self.assertHasNotNone(found, '_addto')
+        self.assertHasNotNone(found, '_addto_nickname')
+        self.assertHas(found, '_addto_nickname', 'who')
+        self.assertHasNone(found, '_addto_description')
+
 
 
 if __name__ == '__main__':
     unittest.main()
+
