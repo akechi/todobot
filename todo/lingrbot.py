@@ -270,7 +270,6 @@ class ToDoBot(object):
 
     def handle_debug(self, spool, who, which):
         """#todo debug [id]"""
-        session = models.get_session()
         if self.is_admin(who):
             if(which.isdigit()):
                 td = ToDo.get(int(which))
