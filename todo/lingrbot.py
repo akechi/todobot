@@ -153,12 +153,9 @@ class ToDoBot(object):
 
     def handle_addto(self, spool, who, nickname, *descriptions):
         """#todo addto [nickname] [description]"""
-        session = models.get_session()
         text = ' '.join(descriptions)
         text += ' (by %s) ' % who #event['message']['speaker_id']
-        td = ToDo(username=nickname, description=text, status=0)
-        session.add(td)
-        session.commit()
+        td = ToDo.add(username=nickname, description=text, created_at=datetime.now(), status=0)
         spool.add(td.id)
         return spool
 
