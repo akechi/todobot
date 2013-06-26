@@ -17,7 +17,6 @@ from todo import models
 
 
 
-
 class Spool(object):
     buffering_size = 500 #byte
 
