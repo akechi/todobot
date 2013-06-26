@@ -11,6 +11,7 @@ from sqlalchemy.pool import QueuePool
 from sqlalchemy.orm import scoped_session
 from sqlalchemy.orm import sessionmaker
 
+from datetime import datetime
 
 class ToDoBotTestCase(unittest.TestCase):
     def setUp(self):
@@ -22,27 +23,23 @@ class ToDoBotTestCase(unittest.TestCase):
         models.get_session = scoped_session(sessionmaker(bind=self.conn))
         self.postman = Postman()
         self.bot = ToDoBot(self.postman)
+    
+        models.make_tables()
 
-        with open('todo_schema.sql') as f:
-            conn.execute(f.read())
-
-        conn.execute("insert into TODO (username, description, created_at, status) values (?, ?, datetime('now', 'localtime'), 0);", ('raa0121', str('test data 1')))
-        conn.execute("insert into TODO (username, description, created_at, status) values (?, ?, datetime('now', 'localtime'), 0);", ('raa0121', str('test data 2')))
-        conn.execute("insert into TODO (username, description, created_at, status) values (?, ?, datetime('now', 'localtime'), 1);", ('raa0121', str('test data 3')))
-        conn.execute("insert into TODO (username, description, created_at, status) values (?, ?, datetime('now', 'localtime'), 0);", ('bgnori', str('test data 4')))
-        conn.execute("insert into TODO (username, description, created_at, status) values (?, ?, datetime('now', 'localtime'), 1);", ('bgnori', str('test data 5')))
-        #conn.close()
-
-        result = conn.execute("select * from TODO where username = ? AND status = 0", ('raa0121',))
-        i = None
-        for i, r in enumerate(result):
-            self.assertEqual('raa0121', r[1])
-        self.assertEqual(1, i)
+        models.ToDo.add(username='raa0121', description='test data 1',
+                created_at=datetime.now(), status = False)
+        models.ToDo.add(username='raa0121', description='test data 2',
+                created_at=datetime.now(), status = False)
+        models.ToDo.add(username='raa0121', description='test data 3',
+                created_at=datetime.now(), status = True)
+        models.ToDo.add(username='bgnori', description='test data 4',
+                created_at=datetime.now(), status = False)
+        models.ToDo.add(username='bgnori', description='test data 5',
+                created_at=datetime.now(), status = True)
 
 
     def tearDown(self):
         self.engine.dispose()
-
 
 
     def test_get_handle_XXX(self):

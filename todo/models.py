@@ -17,6 +17,11 @@ get_session = None
     http://docs.sqlalchemy.org/en/rel_0_8/orm/session.html#thread-local-scope
 """
 
+def make_tables():
+    s = get_session()
+    with open('todo_schema.sql') as f:
+        s.execute(f.read())
+
 
 class ToDo(Base):
     __tablename__ = 'TODO'
