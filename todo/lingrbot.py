@@ -126,7 +126,7 @@ class ToDoBot(object):
         if on_what is not None and self.make_handler_name(on_what) in d:
             spool.write(d[self.make_handler_name(on_what)] + self.help_postfix)
         else:
-            spool.write('\n'.join(list(d.values())) + self.help_postfix)
+            spool.write('\n'.join(d.values()) + self.help_postfix)
         return spool
 
     def handle_add(self, spool, who, *descriptions):
