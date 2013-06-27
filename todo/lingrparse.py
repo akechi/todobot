@@ -58,8 +58,6 @@ task_id = named("task_id", "\d+")
 page = named("page", "\d+")
 
 
-
-
 def acceptable(parent):
     name = parent
     return named("hashtodo", "#todo")(name) + Option(ws, Or(

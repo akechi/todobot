@@ -78,10 +78,11 @@ class ToDoBot(object):
     def __init__(self, postman):
         self.postman = postman
 
-
     def on_json(self, event):
         text = event['message']['text']
         room = event['message']['room']
+        who = event['message']['speaker_id']
+
         spool = Spool(room)
         d = parse(text)
         if d is None:
@@ -89,22 +90,26 @@ class ToDoBot(object):
         if len(d) == 1:
             spool.write('Please "#todo help"')
             return spool
-        who = event['message']['speaker_id']
+        del(d['_hashtodo'])
 
-        method = None
-        for k, method in self.get_handle_XXX():
-           name = k[len("handle"):] 
-           if name in d:
-              del(d[name])
-              break
+        method, name = self.find_method(d)
 
         if method is None:
             spool.write('No such command.')
             return spool
-        del(d['_hashtodo'])
 
-        return method(spool, who, **dict([(k[len(name)+1:], v) for k, v in d.items()]))
+        return method(spool, who, **self.strip(d, name))
 
+    def strip(self, d, name):
+        return dict([(k[len(name)+1:], v) for k, v in d.items()
+            if k.startswith(name) and len(k) > len(name) + 1])
+
+    def find_method(self, d):
+        for k, m in self.get_handle_XXX():
+           n = k[len("handle"):] 
+           if n in d:
+              return m, n
+        return None, None
 
     def is_admin(self, nickname):
         return nickname in self.adminnick
@@ -114,12 +119,15 @@ class ToDoBot(object):
             if k.startswith(self.prefix):
                 yield k, getattr(self, k)
 
+    def make_help_map(self):
+        return dict([(k, getattr(m, "__doc__", self.nohelp%(k,))) for k, m in self.get_handle_XXX()])
+
     def make_handler_name(self, s):
         return self.prefix + s
 
     def handle_help(self, spool, who, command=None):
         """#todo help [command] ... if no command supplied, list all commands."""
-        d = dict([(k, getattr(m, "__doc__", self.nohelp%(k,))) for k, m in self.get_handle_XXX()])
+        d = self.make_help_map()
 
         if command is not None and self.make_handler_name(command) in d:
             spool.write(d[self.make_handler_name(command)] + self.help_postfix)

@@ -27,8 +27,47 @@ def flatten_iter(xxs):
 def flatten(xxs):
     return list(flatten_iter(xxs))
 
+class ToDoBotDipatchTestCase(unittest.TestCase):
+    def setUp(self):
+        self.postman = Postman()
+        self.bot = ToDoBot(self.postman)
 
-class ToDoBotTestCase(unittest.TestCase):
+    def test_strip(self):
+        bot = self.bot
+        d = bot.strip(dict(_add=1, _add_description='test 1'), '_add')
+
+        self.assertNotIn('_add', d)
+        self.assertNotIn('_add_description', d)
+        self.assertIn('description', d)
+
+
+    def test_find_method_empty(self):
+        bot = self.bot
+        m, n = bot.find_method(dict())
+        self.assertIsNone(m)
+        self.assertIsNone(n)
+
+    def test_find_method_found(self):
+        bot = self.bot
+        m, n = bot.find_method(dict(_add=1, _add_description='test 1'))
+        self.assertIsNotNone(m)
+        self.assertEqual(bot.handle_add, m)
+        self.assertIsNotNone(n)
+        self.assertEqual(n, '_add')
+
+
+    def test_make_help_map(self):
+        bot = self.bot
+        d = bot.make_help_map()
+
+        self.assertIn('handle_done', d)
+        self.assertIn('handle_help', d)
+        self.assertEqual(d['handle_add'], "#todo add [description]")
+        self.assertEqual("""#todo done [id]""", d['handle_done'])
+
+
+
+class ToDoBotDBTestCase(unittest.TestCase):
     def setUp(self):
         self.engine = create_engine('sqlite:///:memory:', poolclass=QueuePool)
 
@@ -51,7 +90,6 @@ class ToDoBotTestCase(unittest.TestCase):
                 created_at=datetime.now(), status = False)
         models.ToDo.add(username='bgnori', description='test data 5',
                 created_at=datetime.now(), status = True)
-
         self.raa0121 = LingrUser('raa0121')
 
 
@@ -59,21 +97,11 @@ class ToDoBotTestCase(unittest.TestCase):
         self.engine.dispose()
 
 
-    def test_get_handle_XXX(self):
-        bot = self.bot
-        d = dict([(k, getattr(m, "__doc__", bot.nohelp%(k,))) for k, m in bot.get_handle_XXX()])
-
-        self.assertIn('handle_done', d)
-        self.assertIn('handle_help', d)
-        self.assertEqual(d['handle_add'], "#todo add [description]")
-        self.assertEqual("""#todo done [id]""", d['handle_done'])
-
     def test_bad_command(self):
         req = self.raa0121.say('#todo foobar')
         event = json.loads(req)['events'][0]
         s = self.bot.on_json(event)
 
-        print(s.text)
         xs = flatten([x.splitlines() for x in s.render_for_lingr(500)])
         self.assertIn('No such command.', xs)
 

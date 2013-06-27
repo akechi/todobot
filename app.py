@@ -72,7 +72,7 @@ if __name__ == '__main__':
     bot = Flasky(lingr) #UGH! Fixme
 
     app.route('/lingrbot', methods=['GET', 'POST'])(bot.lingrbot)
-    app.route('/<cmd>/<username>', methods=['GET'])(bot.one_arg)
+    #app.route('/<cmd>/<username>', methods=['GET'])(bot.one_arg)
     if app.debug:
         app.run()
     else:
