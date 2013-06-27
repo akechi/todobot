@@ -115,9 +115,10 @@ class ToDoBot(object):
         return nickname in self.adminnick
 
     def get_handle_XXX(self):
-        for k in self.__class__.__dict__:
-            if k.startswith(self.prefix):
-                yield k, getattr(self, k)
+        for c in self.__class__.__mro__:
+            for k in c.__dict__:
+                if k.startswith(self.prefix):
+                    yield k, getattr(self, k)
 
     def make_help_map(self):
         return dict([(k, getattr(m, "__doc__", self.nohelp%(k,))) for k, m in self.get_handle_XXX()])
