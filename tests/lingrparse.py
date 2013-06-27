@@ -2,12 +2,13 @@
 # -*- coding: utf-8 -*-
 
 import unittest
+import json
 
 from todo.lingrparse import parse
+from mocks import LingrUser
 
 
 class ParseTestCase(unittest.TestCase):
-
 
     def assertHasNone(self, d, k):
         self.assertIsNone(d[k])
@@ -196,6 +197,18 @@ class ParseTestCase(unittest.TestCase):
         self.assertIn('_hashtodo', found)
         self.assertIn('_edit', found)
         self.assertNotIn('_edit_task_id', found)
+
+    def test_from_json(self):
+        raa0121 = LingrUser('raa0121')
+        req = raa0121.say('#todo add have more unittests')
+        j = json.loads(req)
+        t = j['events'][0]['message']['text']
+        found = parse(t)
+        self.assertIsNotNone(found)
+        self.assertIn('_hashtodo', found)
+        self.assertIn('_add', found)
+        self.assertIn('_add_description', found)
+        self.assertEqual('have more unittests', found['_add_description'])
 
 
 if __name__ == '__main__':
