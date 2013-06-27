@@ -73,8 +73,9 @@ class ToDoBotTestCase(unittest.TestCase):
         event = json.loads(req)['events'][0]
         s = self.bot.on_json(event)
 
+        print(s.text)
         xs = flatten([x.splitlines() for x in s.render_for_lingr(500)])
-        self.assertIn('No such command, foobar.', xs)
+        self.assertIn('No such command.', xs)
 
     def test_help(self):
         req = self.raa0121.say('#todo help')

@@ -14,6 +14,7 @@ from datetime import datetime
 
 from todo.models import ToDo
 from todo import models
+from todo.lingrparse import parse
 
 
 
@@ -66,8 +67,6 @@ class Lingrman(object):
         req = {'room':room, 'bot':self.bot_id, 'text':text, 'bot_verifier':self.verifier}
         params = urllib.parse.urlencode(req)
         r = urllib.request.urlopen('http://lingr.com/api/room/say?' + params)
-        #print(r.read(), sys.stderr)
-
 
 
 class ToDoBot(object):
@@ -81,66 +80,63 @@ class ToDoBot(object):
 
 
     def on_json(self, event):
-        args = event['message']['text'].split()
+        text = event['message']['text']
         room = event['message']['room']
         spool = Spool(room)
-        if args[0]  != '#todo':
+        d = parse(text)
+        if d is None:
             return spool
-        if len(args) == 1:
+        if len(d) == 1:
             spool.write('Please "#todo help"')
             return spool
         who = event['message']['speaker_id']
 
-        return self.handle(args[1], spool, who, *(args[2:]))
-    
+        method = None
+        for k, method in self.get_handle_XXX():
+           name = k[len("handle"):] 
+           if name in d:
+              del(d[name])
+              break
 
-    def handle(self, cmd, spool, who, *args):
-        command = self.make_handler_name(cmd)
-        if '.' in command:
-            spool.write('NO "." in command, please!')
-            return spool
-
-        method = getattr(self, command, None)
         if method is None:
-            spool.write('No such command, %s.'%(cmd,))
+            spool.write('No such command.')
             return spool
-        return method(spool, who, *args)
+        del(d['_hashtodo'])
+
+        return method(spool, who, **dict([(k[len(name)+1:], v) for k, v in d.items()]))
 
 
     def is_admin(self, nickname):
         return nickname in self.adminnick
-
-    def make_handler_name(self, s):
-        return self.prefix + s.replace('-', '_') #FIXME unsafe!!
 
     def get_handle_XXX(self):
         for k in self.__class__.__dict__:
             if k.startswith(self.prefix):
                 yield k, getattr(self, k)
 
-    def handle_help(self, spool, who, on_what=None):
+    def make_handler_name(self, s):
+        return self.prefix + s
+
+    def handle_help(self, spool, who, command=None):
         """#todo help [command] ... if no command supplied, list all commands."""
         d = dict([(k, getattr(m, "__doc__", self.nohelp%(k,))) for k, m in self.get_handle_XXX()])
 
-        if on_what is not None and self.make_handler_name(on_what) in d:
-            spool.write(d[self.make_handler_name(on_what)] + self.help_postfix)
+        if command is not None and self.make_handler_name(command) in d:
+            spool.write(d[self.make_handler_name(command)] + self.help_postfix)
         else:
             spool.write('\n'.join(d.values()) + self.help_postfix)
         return spool
 
-    def handle_add(self, spool, who, *descriptions):
+    def handle_add(self, spool, who, description):
         """#todo add [description]"""
-        text = ' '.join(descriptions)
-        td = ToDo.add(username=who, description=text, created_at=datetime.now(), status=0)
-
+        td = ToDo.add(username=who, description=description, created_at=datetime.now(), status=0)
         spool.add(td)
         return spool
 
-    def handle_addto(self, spool, who, nickname, *descriptions):
+    def handle_addto(self, spool, who, nickname, description):
         """#todo addto [nickname] [description]"""
-        text = ' '.join(descriptions)
-        text += ' (by %s) ' % who #event['message']['speaker_id']
-        td = ToDo.add(username=nickname, description=text, created_at=datetime.now(), status=0)
+        description += ' (by %s) ' % who #event['message']['speaker_id']
+        td = ToDo.add(username=nickname, description=description, created_at=datetime.now(), status=0)
         spool.add(td.id)
         return spool
 
@@ -165,25 +161,28 @@ class ToDoBot(object):
         spool.write('nothing found for %s'%(who,))
         return spool
 
-    def handle_listof_all(self, spool, who, whose):
+    def handle_listof_all(self, spool, who, nickname=None):
         """#todo listof-all [nickname]"""
-        for td in ToDo.list_whose(whose):
+        if nickname is None:
+            return self.handle_help(spool, who, 'listof_all')
+
+        for td in ToDo.list_whose(nickname):
             spool.add(td)
-        spool.write('nothing found for %s'%(whose,))
+        spool.write('nothing found for %s'%(nickname,))
         return spool
 
-    def handle_listof_done(self, spool, who, whose):
+    def handle_listof_done(self, spool, who, nickname):
         """#todo listof-done [nickname]"""
-        for td in ToDo.list_whose(whose, status=True):
+        for td in ToDo.list_whose(nickname, status=True):
             spool.add(td)
-        spool.write('nothing found for %s'%(whose,))
+        spool.write('nothing found for %s'%(nickname,))
         return spool
 
-    def handle_listof(self, spool, who, whose):
+    def handle_listof(self, spool, who, nickname):
         """#todo listof [nickname]"""
-        for td in ToDo.list_whose(whose, status=False):
+        for td in ToDo.list_whose(nickname, status=False):
             spool.add(td)
-        spool.write('nothing found for %s'%(whose,))
+        spool.write('nothing found for %s'%(nickname,))
         return spool
 
     def handle_list_everything(self, spool, who):
@@ -193,12 +192,12 @@ class ToDoBot(object):
         spool.write('nothing found for %s'%(who,))
         return spool
 
-    def handle_done(self, spool, who, which):
+    def handle_done(self, spool, who, task_id=None):
         """#todo done [id]"""
-        if not which.isdigit():
+        if task_id is None:
             spool.write("そもそも予定じゃない")
             return spool
-        found = ToDo.get(int(which))
+        found = ToDo.get(int(task_id))
         if found is None:
             spool.write("そんな予定はない")
             return spool
@@ -209,13 +208,12 @@ class ToDoBot(object):
             spool.write("それはお前の予定じゃない")
         return spool
 
-    def handle_edit(self, spool, who, which, *description):
+    def handle_edit(self, spool, who, task_id, description):
         """#todo edit [id] [new description]"""
-        description = ' '.join(description)
-        if not which.isdigit():
+        if task_id is None:
             spool.write("そもそも予定じゃない")
             return spool
-        found = ToDo.get(int(which))
+        found = ToDo.get(int(task_id))
         if found is None:
             spool.write("そんな予定はない")
             return spool
@@ -226,12 +224,12 @@ class ToDoBot(object):
             spool.write("それはお前の予定じゃない")
         return spool
 
-    def handle_del(self, spool, who, which):
+    def handle_del(self, spool, who, task_id):
         """#todo del [id]"""
-        if not which.isdigit():
+        if task_id is None:
             spool.write("そもそも予定じゃない")
             return spool
-        found = ToDo.get(int(which))
+        found = ToDo.get(int(task_id))
         if found is None:
             spool.write("そんな予定はない")
             return spool
@@ -242,27 +240,27 @@ class ToDoBot(object):
             spool.write("それはお前の予定じゃない")
         return spool
 
-    def handle_show(self, spool, who, which):
+    def handle_show(self, spool, who, task_id=None):
         """#todo show [id]"""
-        if not which.isdigit():
+        if task_id is None:
             spool.write("そもそも予定じゃない")
             return spool
-        found = ToDo.get(int(which))
+        found = ToDo.get(int(task_id))
         if found is None:
             spool.write("そんな予定はない")
         else:
             spool.add(found)
         return spool
 
-    def handle_sudodel(self, spool, who, which):
+    def handle_sudodel(self, spool, who, task_id):
         """#todo sudodel [id]"""
-        if not which.isdigit():
+        if task_id is None:
             spool.write("そもそも予定じゃない")
             return spool
         if not self.is_admin(who):
             spool.write('sudoersに入ってないよ')
             return spool
-        found = ToDo.get(int(which)) #just one.
+        found = ToDo.get(int(task_id)) #just one.
         if found is None:
             spool.write("そんな予定はない")
         else:
@@ -270,11 +268,11 @@ class ToDoBot(object):
             spool.write('削除したよ')
         return spool
 
-    def handle_debug(self, spool, who, which):
+    def handle_debug(self, spool, who, task_id):
         """#todo debug [id]"""
         if self.is_admin(who):
-            if(which.isdigit()):
-                td = ToDo.get(int(which))
+            if task_id is not None:
+                td = ToDo.get(int(task_id))
                 spool.add(td.prnformat())
         return spool
 
