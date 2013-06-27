@@ -154,10 +154,10 @@ class ToDoBot(object):
         description += ' (by %s) ' % who #event['message']['speaker_id']
         t = datetime.now()
         td = ToDo.add(username=nickname, description=description, created_at=t, status=0)
-        spool.add(td.id)
+        spool.add(td)
         for n in kw.values():
             td = ToDo.add(username=n, description=description, created_at=t, status=0)
-            spool.add(td.id)
+            spool.add(td)
         return spool
 
     def handle_list_all(self, spool, who):
