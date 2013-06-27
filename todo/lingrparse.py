@@ -6,72 +6,57 @@ import re
 
 SEP = '_'
 
-def make_path(*xs):
-    return SEP.join([x for x in xs])
+def make_path(parent, nth, name):
+    #return parent + SEP + str(nth) + SEP + name
+    return parent + SEP + name
 
 def Or(*fs):
-    def foo(parent):
+    def foo(parent, nth=0):
         return "(?:" + '|'.join([f(parent) for f in fs]) + ")"
     return foo
 
 def Cat(*fs):
-    def foo(parent):
+    def foo(parent, nth=0):
         return "(?:" + ''.join([f(parent) for f in fs]) + ")"
     return foo
 
-def Option(f):
-    def foo(parent):
-        return "(?:" + f(parent) + ")?"
-    return foo
-
-def OpCat(*fs):
-    def foo(parent):
+def Option(*fs):
+    def foo(parent, nth=0):
         return "(?:" + ''.join([f(parent) for f in fs]) + ")?"
     return foo
 
+def OneOrMore(*fs):
+    def foo(parent, nth=0):
+        return "(?:" + ''.join([f(parent) for f in fs]) + ")+"
+    return foo
 
-def blackhole(parent):
+def ZeroOrMore(*fs):
+    def foo(parent, nth=0):
+        return "(?:" + ''.join([f(parent) for f in fs]) + ")*"
+    return foo
+
+def blackhole(parent, nth=0):
     return "(?:.*)"
 
-
-def ws(parent):
+def ws(parent, nth=0):
     return r" "
 
-def todo(parent):
-    return r"(?P<%s>#todo)"%(make_path(parent, 'sharptodo'),)
+def comma(parent, nth=0):
+    return r","
 
-def description(parent):
-    return "(?P<%s>.+)"%(make_path(parent, 'description'))
-
-def nickname(parent):
-    return "(?P<%s>\w+)"%(make_path(parent, 'nickname'))
-
-def command(parent):
-    return "(?P<%s>\w+)"%(make_path(parent, 'command'))
-
-def about(parent):
-    return r"(?P<%s>about)"%(make_path(parent, 'about'),)
-
-def add(parent):
-    """#todo add [description]"""
-    name = make_path(parent, "add")
-    return r"(?P<%s>add"%(name,) + OpCat(ws, description)(name) + ")"
-
-def addto(parent):
-    name = make_path(parent, "addto")
-    return r"(?P<%s>addto"%(name,) + Option(ws)(name) \
-        + OpCat(nickname, Option(ws), OpCat(ws, description))(name) + ")"
-
-def help(parent):
-    """#todo help [command] ... if no command supplied, list all commands."""
-    name = make_path(parent, "help")
-    return r"(?P<%s>help"%(name,) + Option(ws)(name) \
-        + OpCat(ws, command, OpCat(ws, blackhole))(name) + ")"
+def named(name, pat, *fs):
+    def foo(parent, nth=0):
+        p = make_path(parent, nth, name)
+        return r"(?P<%s>%s"%(p, pat) + Cat(*fs)(p) + ")"
+    return foo
 
 
+description = named("description", ".+")
+nickname = named("nickname", "[a-zA-Z][a-zA-Z0-9]*")
+command = named("command", "[a-z]+")
+task_id = named("task_id", "\d+")
 
-"""#todo edit [id] [new description]"""
-"""#todo debug [id]"""
+
 """#todo del [id]"""
 """#todo done [id]"""
 """#todo list"""
@@ -87,11 +72,33 @@ def help(parent):
 
 def acceptable(parent):
     name = parent
-    return todo(name) + OpCat(ws, 
-        Or(Cat(about, OpCat(ws, blackhole)),
-            add,
-            addto,
-            help))(name) + '$'
+    return named("hashtodo", "#todo")(name) + Option(ws, Or(
+        named("about", "about",
+            Option(ws, blackhole)),
+        named("add", "add",
+            Option(ws, description)),
+        named("addto", "addto", Or(
+            ZeroOrMore(ws),
+            Option(OneOrMore(ws),
+                Option(named("u1", "", Cat(nickname, comma))), 
+                Option(named("u2", "", Cat(nickname, comma))), 
+                Option(named("u3", "", Cat(nickname, comma))), 
+                Option(named("u4", "", Cat(nickname, comma))), 
+                ZeroOrMore(named("too_maney", "", Cat(nickname, comma))), 
+                nickname, 
+                Option(OneOrMore(ws), Option(description))))),
+        named("help", "help",
+            Option(ws, Option(command, Option(ws, blackhole)))),
+        named("edit", "edit",
+            Option(ws, description)),
+        named("debug", "debug", 
+            Option(ws, Option(task_id, Option(ws, blackhole)))),
+        named("del", "del", 
+            Option(ws, Option(task_id, Option(ws, blackhole)))),
+        named("done", "done", 
+            Option(ws, Option(task_id, Option(ws, blackhole)))),
+
+    ))(name) + '$'
 
 r = re.compile(acceptable(""))
 
@@ -99,9 +106,10 @@ print(r.pattern)
 
 def parse(text):
     m = r.match(text)
-    if m is not None:
-        m = m.groupdict()
-    return m
+    if m is None:
+        return None
+    d = m.groupdict()
+    return d
 
 
 
