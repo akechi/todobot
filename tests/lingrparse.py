@@ -210,6 +210,20 @@ class ParseTestCase(unittest.TestCase):
         self.assertIn('_add_description', found)
         self.assertEqual('have more unittests', found['_add_description'])
 
+    def test_list(self):
+        found = parse("#todo list")
+        self.assertIsNotNone(found)
+        self.assertIn('_hashtodo', found)
+        self.assertIn('_list', found)
+
+    def test_listof(self):
+        found = parse("#todo listof raa0121")
+        self.assertIsNotNone(found)
+        self.assertIn('_hashtodo', found)
+        self.assertIn('_listof', found)
+        self.assertIn('_listof_nickname', found)
+        self.assertEqual('raa0121', found['_listof_nickname'])
+
 
 if __name__ == '__main__':
     unittest.main()
