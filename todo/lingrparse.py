@@ -102,8 +102,6 @@ def acceptable(parent):
 
 r = re.compile(acceptable(""))
 
-print(r.pattern)
-
 def parse(text):
     m = r.match(text)
     if m is None:
@@ -111,5 +109,7 @@ def parse(text):
     d = m.groupdict()
     return d
 
-
+if __name__ == '__main__':
+    print(r.pattern)
+    print("enjoy reading regexp!")
 
