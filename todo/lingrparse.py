@@ -55,19 +55,9 @@ description = named("description", ".+")
 nickname = named("nickname", "[a-zA-Z][a-zA-Z0-9]*")
 command = named("command", "[a-z]+")
 task_id = named("task_id", "\d+")
+page = named("page", "\d+")
 
 
-"""#todo del [id]"""
-"""#todo done [id]"""
-"""#todo list"""
-"""#todo list-all"""
-"""#todo list-done"""
-"""#todo list-everything"""
-"""#todo listof [nickname]"""
-"""#todo listof-all [nickname]"""
-"""#todo listof-done [nickname]"""
-"""#todo show [id]"""
-"""#todo sudodel [id]"""
 
 
 def acceptable(parent):
@@ -90,14 +80,31 @@ def acceptable(parent):
         named("help", "help",
             Option(ws, Option(command, Option(ws, blackhole)))),
         named("edit", "edit",
-            Option(ws, description)),
+            Option(ws, Option(Or(task_id, blackhole), Option(ws, Option(description))))),
         named("debug", "debug", 
-            Option(ws, Option(task_id, Option(ws, blackhole)))),
+            Option(ws, Option(Or(task_id, blackhole), Option(ws, blackhole)))),
         named("del", "del", 
-            Option(ws, Option(task_id, Option(ws, blackhole)))),
+            Option(ws, Option(Or(task_id, blackhole), Option(ws, blackhole)))),
         named("done", "done", 
-            Option(ws, Option(task_id, Option(ws, blackhole)))),
-
+            Option(ws, Option(Or(task_id, blackhole), Option(ws, blackhole)))),
+        named("list", "list", 
+            Option(ws, Option(Or(page, blackhole), Option(ws, blackhole)))),
+        named("list_all", "list-all",
+            Option(ws, blackhole)),
+        named("list_done", "list-done",
+            Option(ws, blackhole)),
+        named("list_everything", "list-everything",
+            Option(ws, blackhole)),
+        named("listof", "listof",
+            Option(ws, Option(nickname, Option(ws, blackhole)))),
+        named("listof_all", "listof-all",
+            Option(ws, Option(nickname, Option(ws, blackhole)))),
+        named("listof_done", "listof-done",
+            Option(ws, Option(nickname, Option(ws, blackhole)))),
+        named("show", "show", 
+            Option(ws, Option(Or(task_id, blackhole), Option(ws, blackhole)))),
+        named("sudel", "sudel", 
+            Option(ws, Option(Or(task_id, blackhole), Option(ws, blackhole)))),
     ))(name) + '$'
 
 r = re.compile(acceptable(""))
@@ -106,7 +113,7 @@ def parse(text):
     m = r.match(text)
     if m is None:
         return None
-    d = m.groupdict()
+    d = dict([(k, v) for k, v in m.groupdict().items() if v is not None])
     return d
 
 if __name__ == '__main__':
