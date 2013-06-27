@@ -123,7 +123,7 @@ class ToDoBot(object):
         return dict([(k, getattr(m, "__doc__", self.nohelp%(k,))) for k, m in self.get_handle_XXX()])
 
     def make_handler_name(self, s):
-        return self.prefix + s
+        return self.prefix + s.replace('-', '_')
 
     def handle_help(self, spool, who, command=None):
         """#todo help [command] ... if no command supplied, list all commands."""
