@@ -142,11 +142,22 @@ class ToDoBot(object):
         spool.add(td)
         return spool
 
-    def handle_addto(self, spool, who, nickname, description):
+    def handle_addto(self, spool, who, nickname, description, **kw):
         """#todo addto [nickname] [description]"""
+        '''
+            u1_nickname=None, ...
+            too_many_nickname=None
+        '''
+        if "too_many_nickname" in kw:
+            spool.write("Too many nicknames!")
+            return spool
         description += ' (by %s) ' % who #event['message']['speaker_id']
-        td = ToDo.add(username=nickname, description=description, created_at=datetime.now(), status=0)
+        t = datetime.now()
+        td = ToDo.add(username=nickname, description=description, created_at=t, status=0)
         spool.add(td.id)
+        for n in kw.values():
+            td = ToDo.add(username=n, description=description, created_at=t, status=0)
+            spool.add(td.id)
         return spool
 
     def handle_list_all(self, spool, who):

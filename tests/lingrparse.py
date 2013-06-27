@@ -90,7 +90,7 @@ class ParseTestCase(unittest.TestCase):
         self.assertIn('_addto_nickname', found)
         self.assertHas(found, '_addto_u1_nickname', 'one')
         self.assertHas(found, '_addto_u2_nickname', 'two')
-        self.assertHas(found, '_addto_too_maney_nickname', 'six')
+        self.assertHas(found, '_addto_too_many_nickname', 'six')
         self.assertIn('_addto_description', found)
         self.assertHas(found, '_addto_description', 'bar')
 

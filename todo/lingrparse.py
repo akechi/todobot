@@ -72,7 +72,7 @@ def acceptable(parent):
                 Option(named("u2", "", Cat(nickname, comma))), 
                 Option(named("u3", "", Cat(nickname, comma))), 
                 Option(named("u4", "", Cat(nickname, comma))), 
-                ZeroOrMore(named("too_maney", "", Cat(nickname, comma))), 
+                ZeroOrMore(named("too_many", "", Cat(nickname, comma))), 
                 nickname, 
                 Option(OneOrMore(ws), Option(description))))),
         named("help", "help",
