@@ -46,6 +46,7 @@ comma = unnamed(",")
 hyph = unnamed("-")
 expect_nohyph = unnamed("(?!-)")
 
+ignore_rest = Option(OneOrMore(ws), blackhole)
 
 def named(name, pat, *fs):
     def foo(parent, nth=0):
@@ -54,8 +55,15 @@ def named(name, pat, *fs):
     return foo
 
 
+def may_be(f):
+    def foo(parent, nth=0):
+        return Option(OneOrMore(ws), Option(f))(parent)
+    return foo
+
+
 description = named("description", ".+")
 nickname = named("nickname", "[a-zA-Z@][a-zA-Z0-9]*")
+
 command = named("command", "[a-z]+")
 task_id = named("task_id", "\d+")
 
@@ -75,50 +83,56 @@ keyword = named("keyword", "\w+")
 def acceptable(parent):
     name = parent
     return named("hashtodo", "#todo")(name) + Option(ws, Or(
-        named("about", "about",
-            Option(ws, blackhole)),
-        named("add", "add",
-            Option(ws, description)),
-        named("addto", "addto", Or(
-            ZeroOrMore(ws),
-            Option(OneOrMore(ws),
-                Option(Cat(named("u1", "", nickname), comma)),
-                Option(Cat(named("u2", "", nickname), comma)),
-                Option(Cat(named("u3", "", nickname), comma)),
-                Option(Cat(named("u4", "", nickname), comma)),
-                ZeroOrMore(named("too_many", "", Cat(nickname, comma))), 
-                nickname, 
-                Option(OneOrMore(ws), Option(description))))),
+        named("about", "about", ignore_rest),
+        named("add", "add", may_be(description)),
+        named("addto", "addto", Option(
+            OneOrMore(ws),
+            Option(Cat(named("u1", "", nickname), comma)),
+            Option(Cat(named("u2", "", nickname), comma)),
+            Option(Cat(named("u3", "", nickname), comma)),
+            Option(Cat(named("u4", "", nickname), comma)),
+            ZeroOrMore(named("too_many", "", Cat(nickname, comma))), 
+            Option(nickname, unnamed("(?!,)"), may_be(description)))),
         named("help", "help",
-            Option(ws, Option(command, Option(ws, blackhole)))),
+            may_be(command),
+            ignore_rest),
         named("edit", "edit",
-            Option(ws, Option(Or(task_id, blackhole), Option(ws, Option(description))))),
-        named("debug", "debug", 
-            Option(ws, Option(Or(task_id, blackhole), Option(ws, blackhole)))),
-        named("del", "del", 
-            Option(ws, Option(Or(task_id, blackhole), Option(ws, blackhole)))),
-        named("done", "done", 
-            Option(ws, Option(Or(task_id, blackhole), Option(ws, blackhole)))),
+            may_be(task_id),
+            may_be(description)),
+        named("debug", "debug",
+            may_be(task_id),
+            ignore_rest),
+        named("del", "del",
+            may_be(task_id),
+            ignore_rest),
+        named("done", "done",
+            may_be(task_id),
+            ignore_rest),
         named("list", "list", 
-            Option(ws, rangespec),
-            Option(ws, keyword),
-            Option(ws, blackhole)),
+            may_be(rangespec),
+            may_be(keyword),
+            ignore_rest),
         named("list_all", "list-all",
-            Option(ws, blackhole)),
+            ignore_rest),
         named("list_done", "list-done",
-            Option(ws, blackhole)),
+            ignore_rest),
         named("list_everything", "list-everything",
-            Option(ws, blackhole)),
+            ignore_rest),
         named("listof", "listof",
-            Option(ws, Option(nickname, Option(ws, blackhole)))),
+            may_be(nickname),
+            ignore_rest),
         named("listof_all", "listof-all",
-            Option(ws, Option(nickname, Option(ws, blackhole)))),
+            may_be(nickname),
+            ignore_rest),
         named("listof_done", "listof-done",
-            Option(ws, Option(nickname, Option(ws, blackhole)))),
+            may_be(nickname),
+            ignore_rest),
         named("show", "show", 
-            Option(ws, Option(Or(task_id, blackhole), Option(ws, blackhole)))),
+            may_be(nickname),
+            ignore_rest),
         named("sudel", "sudel", 
-            Option(ws, Option(Or(task_id, blackhole), Option(ws, blackhole)))),
+            may_be(nickname),
+            ignore_rest),
     ))(name) + '$'
 
 r = re.compile(acceptable(""))
