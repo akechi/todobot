@@ -177,14 +177,14 @@ class ToDoBot(object):
 
     def handle_list(self, spool, who, **kw):
         """#todo list"""
-        start = kw.get('range_start', None)
+        start = kw.get('range_start', 0)
         start = kw.get('range_both_start', 0)
         end = kw.get('range_end', None)
         end = kw.get('range_both_end', None)
         if end is None:
            limit = -1
         else:
-           limit = end - start 
+           limit = int(end) - int(start)
         keyword = kw.get('keyword', None)
 
         if keyword is not None:
