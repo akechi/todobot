@@ -83,6 +83,12 @@ class ToDo(Base):
         session.add(self)
         session.commit()
 
+    def set_nickname(self, nickname):
+        session = get_session()
+        self.username = nickname
+        session.add(self)
+        session.commit()
+
     def delete(self):
         session = get_session()
         session.delete(self)

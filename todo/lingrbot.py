@@ -231,6 +231,19 @@ class ToDoBot(object):
         spool.write('nothing found for %s'%(who,))
         return spool
 
+    def handle_moveto(self, spool, who, nickname, task_id):
+        """#todo moveto [nickname] [task_id]"""
+        if task_id is None:
+            spool.write("そもそも予定じゃない")
+            return spool
+        found = ToDo.get(int(task_id))
+        if found is None:
+            spool.write("そんな予定はない")
+        else:
+            found.set_nickname(nickname)
+            spool.add(found)
+        return spool
+
     def handle_done(self, spool, who, task_id=None):
         """#todo done [id]"""
         if task_id is None:
