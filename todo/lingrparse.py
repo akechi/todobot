@@ -101,10 +101,9 @@ def acceptable(parent):
             Option(ws, Option(Or(task_id, blackhole), Option(ws, blackhole)))),
         named("list", "list", 
             Option(ws, 
-              Option(
-                rangespec,
+                Option(rangespec),
                 Option(ws, keyword,
-                  Option(ws, blackhole))))),
+                    Option(ws, blackhole)))),
         named("list_all", "list-all",
             Option(ws, blackhole)),
         named("list_done", "list-done",
