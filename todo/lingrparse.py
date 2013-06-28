@@ -35,14 +35,17 @@ def ZeroOrMore(*fs):
         return "(?:" + ''.join([f(parent) for f in fs]) + ")*"
     return foo
 
-def blackhole(parent, nth=0):
-    return "(?:.*)"
+def unnamed(pat, *fs):
+    def foo(parent, nth=0):
+        return "(?:%s"%(pat,)+ Cat(*fs)(parent) + ")"
+    return foo
 
-def ws(parent, nth=0):
-    return r" "
+blackhole = unnamed(".*")
+ws = unnamed(" ")
+comma = unnamed(",")
+hyph = unnamed("-")
+expect_nohyph = unnamed("(?!-)")
 
-def comma(parent, nth=0):
-    return r","
 
 def named(name, pat, *fs):
     def foo(parent, nth=0):
@@ -55,7 +58,18 @@ description = named("description", ".+")
 nickname = named("nickname", "[a-zA-Z][a-zA-Z0-9]*")
 command = named("command", "[a-z]+")
 task_id = named("task_id", "\d+")
-page = named("page", "\d+")
+
+end = named("end", "\d+")
+start = named("start", "\d+")
+
+rangespec = named("range", "", 
+    Or(
+      Cat(start, hyph),
+      Cat(end, expect_nohyph),
+      named('both', '', start, hyph, end),
+      ))
+
+keyword = named("keyword", "\w+")
 
 
 def acceptable(parent):
@@ -86,7 +100,11 @@ def acceptable(parent):
         named("done", "done", 
             Option(ws, Option(Or(task_id, blackhole), Option(ws, blackhole)))),
         named("list", "list", 
-            Option(ws, Option(Or(page, blackhole), Option(ws, blackhole)))),
+            Option(ws, 
+              Option(
+                rangespec,
+                Option(ws, keyword,
+                  Option(ws, blackhole))))),
         named("list_all", "list-all",
             Option(ws, blackhole)),
         named("list_done", "list-done",
