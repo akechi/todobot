@@ -326,7 +326,7 @@ class ToDoBotListCommandTestCase(unittest.TestCase):
         self.assertEqual(1, len([x for x in xs if x.startswith('[_]')]))
         self.assertIn('ローソンでLチキとイヤホン買いに行く', xs[0])
 
-    def test_start_jpkw(self):
+    def test_jpkw(self):
         req = self.raa0121.say('#todo list 割')
         event = json.loads(req)['events'][0]
         s = self.bot.on_json(event)
@@ -335,6 +335,14 @@ class ToDoBotListCommandTestCase(unittest.TestCase):
         self.assertEqual(0, len([x for x in xs if x.startswith('[X]')]))
         self.assertEqual(2, len([x for x in xs if x.startswith('[_]')]))
 
+    def test_start_jpkw(self):
+        req = self.raa0121.say('#todo list 1- 割')
+        event = json.loads(req)['events'][0]
+        s = self.bot.on_json(event)
+
+        xs = [r.prnformat() for r in s.rows]
+        self.assertEqual(0, len([x for x in xs if x.startswith('[X]')]))
+        self.assertEqual(1, len([x for x in xs if x.startswith('[_]')]))
 
 
 if __name__ == '__main__':
