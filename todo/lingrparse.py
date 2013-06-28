@@ -55,9 +55,9 @@ def named(name, pat, *fs):
     return foo
 
 
-def may_be(f):
+def may_be(*fs):
     def foo(parent, nth=0):
-        return Option(OneOrMore(ws), Option(f))(parent)
+        return Option(OneOrMore(ws), Option(*fs))(parent)
     return foo
 
 
@@ -85,14 +85,15 @@ def acceptable(parent):
     return named("hashtodo", "#todo")(name) + Option(ws, Or(
         named("about", "about", ignore_rest),
         named("add", "add", may_be(description)),
-        named("addto", "addto", Option(
-            OneOrMore(ws),
-            Option(Cat(named("u1", "", nickname), comma)),
-            Option(Cat(named("u2", "", nickname), comma)),
-            Option(Cat(named("u3", "", nickname), comma)),
-            Option(Cat(named("u4", "", nickname), comma)),
-            ZeroOrMore(named("too_many", "", Cat(nickname, comma))), 
-            Option(nickname, unnamed("(?!,)"), may_be(description)))),
+        named("addto", "addto", 
+            may_be(
+                Option(Cat(named("u1", "", nickname), comma)),
+                Option(Cat(named("u2", "", nickname), comma)),
+                Option(Cat(named("u3", "", nickname), comma)),
+                Option(Cat(named("u4", "", nickname), comma)),
+                ZeroOrMore(named("too_many", "", Cat(nickname, comma))), 
+                Option(nickname, unnamed("(?!,)"))),
+            may_be(description)),
         named("help", "help",
             may_be(command),
             ignore_rest),
@@ -128,7 +129,7 @@ def acceptable(parent):
             may_be(nickname),
             ignore_rest),
         named("show", "show", 
-            may_be(nickname),
+            may_be(task_id),
             ignore_rest),
         named("sudel", "sudel", 
             may_be(nickname),
