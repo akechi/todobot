@@ -16,12 +16,15 @@ from todo import models
 
 from mocks import LingrUser
 
-TESTDATA = """\
+DBTESTDATA = """\
 {"created_at": "2013-05-15 14:02:50.910459", "username": "raa0121", "description": "test data 1", "status": false}
 {"created_at": "2013-05-15 14:02:51.910459", "username": "raa0121", "description": "test data 2", "status": false}
 {"created_at": "2013-05-15 14:02:52.910459", "username": "raa0121", "description": "test data 3", "status": true}
 {"created_at": "2013-05-15 14:02:53.910459", "username": "bgnori", "description": "test data 4", "status": false}
 {"created_at": "2013-05-15 14:02:54.910459", "username": "bgnori", "description": "test data 5", "status": true}
+{"created_at": "2013-06-02 04:53:54", "username": "xyz", "description": "BD\u304c\u5272\u308c\u305f\u3053\u3068\u3092\u78ba\u8a8d\u3059\u308b", "status": false}
+{"created_at": "2013-06-02 20:21:28", "username": "xyz", "description": "\u6b21\u56de\u4ee5\u964d\u306e\u70ba\u306e\u8cc7\u6599\u3092\u4f5c\u308b(BBQ)", "status": false}
+{"created_at": "2013-05-30 20:39:37", "username": "xyz", "description": "\u30ed\u30fc\u30bd\u30f3\u3067L\u30c1\u30ad\u3068\u30a4\u30e4\u30db\u30f3\u8cb7\u3044\u306b\u884c\u304f", "status": false}
 """
 
 
@@ -90,10 +93,11 @@ class ToDoBotDBTestCase(unittest.TestCase):
     
         models.make_tables()
 
-        for line in io.StringIO(TESTDATA):
+        for line in io.StringIO(DBTESTDATA):
             td = models.ToDo.from_json(line)
         
         self.raa0121 = LingrUser('raa0121')
+        self.xyz = LingrUser('xyz')
 
 
     def tearDown(self):
@@ -185,6 +189,16 @@ class ToDoBotDBTestCase(unittest.TestCase):
         self.assertEqual(0, len([x for x in xs if x.startswith('[X]')]))
         self.assertEqual(2, len([x for x in xs if x.startswith('[_]')]))
 
+    def test_list_arg(self):
+        req = self.xyz.say('#todo list 0-10 イヤホン')
+        event = json.loads(req)['events'][0]
+        s = self.bot.on_json(event)
+
+        xs = [r.prnformat() for r in s.rows]
+        self.assertEqual(0, len([x for x in xs if x.startswith('[X]')]))
+        self.assertEqual(1, len([x for x in xs if x.startswith('[_]')]))
+
+
     def test_listof_all(self):
         req = self.raa0121.say('#todo listof-all bgnori')
         event = json.loads(req)['events'][0]
@@ -219,7 +233,7 @@ class ToDoBotDBTestCase(unittest.TestCase):
         s = self.bot.on_json(event)
 
         xs = [r.prnformat() for r in s.rows]
-        self.assertEqual(3, len([x for x in xs if x.startswith('[_]')]))
+        self.assertEqual(6, len([x for x in xs if x.startswith('[_]')]))
         self.assertEqual(2, len([x for x in xs if x.startswith('[X]')]))
 
     def test_done(self):
@@ -273,6 +287,55 @@ class ToDoBotDBTestCase(unittest.TestCase):
         xs = s.text.splitlines()
         self.assertIn("It provides task management feature to lingr room.", xs)
         self.assertIn("see https://github.com/akechi/todobot", xs)
+
+
+LISTCOMMAND_TESTDATA = """\
+{"created_at": "2013-06-02 04:53:54", "username": "raa0121", "description": "BD\u304c\u5272\u308c\u305f\u3053\u3068\u3092\u78ba\u8a8d\u3059\u308b", "status": false}
+{"created_at": "2013-06-02 20:21:28", "username": "raa0121", "description": "\u6b21\u56de\u4ee5\u964d\u306e\u70ba\u306e\u8cc7\u6599\u3092\u4f5c\u308b(BBQ)", "status": false}
+{"created_at": "2013-05-30 20:39:37", "username": "raa0121", "description": "\u30ed\u30fc\u30bd\u30f3\u3067L\u30c1\u30ad\u3068\u30a4\u30e4\u30db\u30f3\u8cb7\u3044\u306b\u884c\u304f", "status": false}
+{"created_at": "2013-05-31 04:24:44", "username": "raa0121", "description": "VAC\u306e\u8a18\u4e8b\u660e\u65e5\u304b\u3089\u672c\u6c17\u3092\u51fa\u3059", "status": false}
+{"created_at": "2013-05-31 05:34:34", "username": "raa0121", "description": "\u30cb\u30e3\u30eb\u5b50\u306eBD\u304c\u5272\u308c\u308b\u307e\u3048\u306b\u8996\u8074\u3059\u308b", "status": false}
+"""
+
+
+class ToDoBotListCommandTestCase(unittest.TestCase):
+    def setUp(self):
+        self.engine = create_engine('sqlite:///:memory:', poolclass=QueuePool)
+
+
+        conn = self.engine.connect()
+        self.conn = conn
+        models.get_session = scoped_session(sessionmaker(bind=self.conn))
+        self.postman = Postman()
+        self.bot = ToDoBot(self.postman)
+    
+        models.make_tables()
+
+        for line in io.StringIO(LISTCOMMAND_TESTDATA):
+            td = models.ToDo.from_json(line)
+        
+        self.raa0121 = LingrUser('raa0121')
+
+    def test_start_hyph_end_jpkw(self):
+        req = self.raa0121.say('#todo list 0-10 イヤホン')
+        event = json.loads(req)['events'][0]
+        s = self.bot.on_json(event)
+
+        xs = [r.prnformat() for r in s.rows]
+        self.assertEqual(0, len([x for x in xs if x.startswith('[X]')]))
+        self.assertEqual(1, len([x for x in xs if x.startswith('[_]')]))
+        self.assertIn('ローソンでLチキとイヤホン買いに行く', xs[0])
+
+    def test_start_jpkw(self):
+        req = self.raa0121.say('#todo list 割')
+        event = json.loads(req)['events'][0]
+        s = self.bot.on_json(event)
+
+        xs = [r.prnformat() for r in s.rows]
+        self.assertEqual(0, len([x for x in xs if x.startswith('[X]')]))
+        self.assertEqual(2, len([x for x in xs if x.startswith('[_]')]))
+
+
 
 if __name__ == '__main__':
     unittest.main()

@@ -198,7 +198,7 @@ class ParseTestCase(unittest.TestCase):
         self.assertIn('_edit', found)
         self.assertNotIn('_edit_task_id', found)
 
-    def test_from_json(self):
+    def test_data_from_json(self):
         raa0121 = LingrUser('raa0121')
         req = raa0121.say('#todo add have more unittests')
         j = json.loads(req)
@@ -222,6 +222,34 @@ class ParseTestCase(unittest.TestCase):
         self.assertNotIn('_list_range_both_start', found)
         self.assertNotIn('_list_range_both_end', found)
         self.assertNotIn('_list_keyword', found)
+
+    def test_list_with_keyword(self):
+        found = parse("#todo list momonga")
+        self.assertIsNotNone(found)
+        self.assertIn('_hashtodo', found)
+        self.assertIn('_list', found)
+
+        self.assertNotIn('_list_range_start', found)
+        self.assertNotIn('_list_range_end', found)
+        self.assertNotIn('_list_range_both', found)
+        self.assertNotIn('_list_range_both_start', found)
+        self.assertNotIn('_list_range_both_end', found)
+        self.assertIn('_list_keyword', found)
+        self.assertEqual(found['_list_keyword'], 'momonga')
+
+    def test_list_with_jpkeyword(self):
+        found = parse("#todo list 仕様")
+        self.assertIsNotNone(found)
+        self.assertIn('_hashtodo', found)
+        self.assertIn('_list', found)
+
+        self.assertNotIn('_list_range_start', found)
+        self.assertNotIn('_list_range_end', found)
+        self.assertNotIn('_list_range_both', found)
+        self.assertNotIn('_list_range_both_start', found)
+        self.assertNotIn('_list_range_both_end', found)
+        self.assertIn('_list_keyword', found)
+        self.assertEqual(found['_list_keyword'], '仕様')
 
     def test_list_with_end_of_range(self):
         found = parse("#todo list 12")
