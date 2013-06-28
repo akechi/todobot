@@ -186,7 +186,7 @@ class ToDoBot(object):
         if keyword is not None:
             #FIXME danger!
             for td in ToDo.list_whose(who, status=False).\
-                filter(ToDo.description.like(r'%%s%'%(keyword))).\
+                filter(ToDo.description.like('%%%s%%'%(keyword, ))).\
                 offset(start).limit(end):
                 spool.add(td)
         else:
