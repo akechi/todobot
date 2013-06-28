@@ -184,7 +184,7 @@ class ToDoBot(object):
         if end is None:
            limit = -1
         else:
-           limit = end - begin
+           limit = end - start 
         keyword = kw.get('keyword', None)
 
         if keyword is not None:
