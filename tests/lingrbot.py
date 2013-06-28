@@ -4,6 +4,7 @@
 import unittest
 from datetime import datetime
 import json
+import io
 
 from sqlalchemy import create_engine
 from sqlalchemy.pool import QueuePool
@@ -15,6 +16,14 @@ from todo import models
 
 from mocks import LingrUser
 
+TESTDATA = """\
+{"created_at": "2013-05-15 14:02:50.910459", "username": "raa0121", "description": "test data 1", "status": false}
+{"created_at": "2013-05-15 14:02:51.910459", "username": "raa0121", "description": "test data 2", "status": false}
+{"created_at": "2013-05-15 14:02:52.910459", "username": "raa0121", "description": "test data 3", "status": true}
+{"created_at": "2013-05-15 14:02:53.910459", "username": "bgnori", "description": "test data 4", "status": false}
+{"created_at": "2013-05-15 14:02:54.910459", "username": "bgnori", "description": "test data 5", "status": true}
+"""
+
 
 def flatten_iter(xxs):
     for xs in xxs:
@@ -23,6 +32,7 @@ def flatten_iter(xxs):
                 yield x
         else:
             yield xs
+
 
 def flatten(xxs):
     return list(flatten_iter(xxs))
@@ -80,16 +90,9 @@ class ToDoBotDBTestCase(unittest.TestCase):
     
         models.make_tables()
 
-        models.ToDo.add(username='raa0121', description='test data 1',
-                created_at=datetime.now(), status = False)
-        models.ToDo.add(username='raa0121', description='test data 2',
-                created_at=datetime.now(), status = False)
-        models.ToDo.add(username='raa0121', description='test data 3',
-                created_at=datetime.now(), status = True)
-        models.ToDo.add(username='bgnori', description='test data 4',
-                created_at=datetime.now(), status = False)
-        models.ToDo.add(username='bgnori', description='test data 5',
-                created_at=datetime.now(), status = True)
+        for line in io.StringIO(TESTDATA):
+            td = models.ToDo.from_json(line)
+        
         self.raa0121 = LingrUser('raa0121')
 
 
