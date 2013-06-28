@@ -180,18 +180,22 @@ class ToDoBot(object):
         start = kw.get('range_start', None)
         start = kw.get('range_both_start', 0)
         end = kw.get('range_end', None)
-        end = kw.get('range_both_end', -1)
+        end = kw.get('range_both_end', None)
+        if end is None:
+           limit = -1
+        else:
+           limit = end - begi
         keyword = kw.get('keyword', None)
 
         if keyword is not None:
             #FIXME danger!
             for td in ToDo.list_whose(who, status=False).\
                 filter(ToDo.description.like('%%%s%%'%(keyword, ))).\
-                offset(start).limit(end):
+                offset(start).limit(limit):
                 spool.add(td)
         else:
             for td in ToDo.list_whose(who, status=False).\
-                offset(start).limit(end):
+                offset(start).limit(limit):
                 spool.add(td)
         spool.write('nothing found for %s'%(who,))
         return spool
