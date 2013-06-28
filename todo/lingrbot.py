@@ -175,10 +175,24 @@ class ToDoBot(object):
         spool.write('nothing found for %s'%(who,))
         return spool
 
-    def handle_list(self, spool, who):
+    def handle_list(self, spool, who, **kw):
         """#todo list"""
-        for td in ToDo.list_whose(who, status=False):
-            spool.add(td)
+        start = kw.get('range_start', None)
+        start = kw.get('range_both_start', 0)
+        end = kw.get('range_end', None)
+        end = kw.get('range_both_end', -1)
+        keyword = kw.get('keyword', None)
+
+        if keyword is not None:
+            #FIXME danger!
+            for td in ToDo.list_whose(who, status=False).\
+                filter(ToDo.description.like(r'%%s%'%(keyword))).\
+                offset(start).limit(end):
+                spool.add(td)
+        else:
+            for td in ToDo.list_whose(who, status=False).\
+                offset(start).limit(end):
+                spool.add(td)
         spool.write('nothing found for %s'%(who,))
         return spool
 
