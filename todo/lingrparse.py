@@ -64,8 +64,8 @@ start = named("start", "\d+")
 
 rangespec = named("range", "", 
     Or(
-      Cat(start, hyph),
-      Cat(end, expect_nohyph),
+      Cat(expect_nohyph, start, hyph),
+      Cat(Option(hyph), end, expect_nohyph),
       named('both', '', start, hyph, end),
       ))
 

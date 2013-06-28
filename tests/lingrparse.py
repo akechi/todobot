@@ -237,6 +237,20 @@ class ParseTestCase(unittest.TestCase):
         self.assertNotIn('_list_keyword', found)
         self.assertEqual(found['_list_range_end'], '12')
 
+    def test_list_with_end_of_range_hyph(self):
+        found = parse("#todo list -12")
+        self.assertIsNotNone(found)
+        self.assertIn('_hashtodo', found)
+        self.assertIn('_list', found)
+
+        self.assertNotIn('_list_range_start', found)
+        self.assertIn('_list_range_end', found)
+        self.assertNotIn('_list_range_both', found)
+        self.assertNotIn('_list_range_both_start', found)
+        self.assertNotIn('_list_range_both_end', found)
+        self.assertNotIn('_list_keyword', found)
+        self.assertEqual(found['_list_range_end'], '12')
+
     def test_list_with_start_of_range(self):
         found = parse("#todo list 3-")
         self.assertIsNotNone(found)
@@ -281,6 +295,21 @@ class ParseTestCase(unittest.TestCase):
         self.assertEqual(found['_list_range_both_start'], '3')
         self.assertEqual(found['_list_range_both_end'], '12')
         self.assertEqual(found['_list_keyword'], 'momonga')
+
+    def test_list_with_keyword_and_end_of_range_hyph(self):
+        found = parse("#todo list -12 momonga")
+        self.assertIsNotNone(found)
+        self.assertIn('_hashtodo', found)
+        self.assertIn('_list', found)
+
+        self.assertNotIn('_list_range_start', found)
+        self.assertIn('_list_range_end', found)
+        self.assertNotIn('_list_range_both', found)
+        self.assertNotIn('_list_range_both_start', found)
+        self.assertNotIn('_list_range_both_end', found)
+        self.assertIn('_list_keyword', found)
+        self.assertEqual(found['_list_keyword'], 'momonga')
+        self.assertEqual(found['_list_range_end'], '12')
 
     def test_listof(self):
         found = parse("#todo listof raa0121")
