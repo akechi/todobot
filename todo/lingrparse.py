@@ -139,6 +139,8 @@ def acceptable(parent):
             ignore_rest),
         named("listof", "listof",
             may_be(nickname),
+            may_be(rangespec),
+            may_be(keyword),
             ignore_rest),
         named("listof_all", "listof-all",
             may_be(nickname),

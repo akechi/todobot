@@ -377,6 +377,29 @@ class ParseTestCase(unittest.TestCase):
         self.assertIn('_listof_nickname', found)
         self.assertEqual('raa0121', found['_listof_nickname'])
 
+    def test_listof_with_end(self):
+        found = parse("#todo listof raa0121 4")
+        self.assertIsNotNone(found)
+        self.assertIn('_hashtodo', found)
+        self.assertIn('_listof', found)
+        self.assertIn('_listof_nickname', found)
+        self.assertIn('_listof_range_end', found)
+        self.assertEqual('raa0121', found['_listof_nickname'])
+        self.assertEqual(found['_listof_range_end'], '4')
+
+    def test_listof_with_range(self):
+        found = parse("#todo listof raa0121 3-12")
+        self.assertIsNotNone(found)
+        self.assertIn('_hashtodo', found)
+        self.assertIn('_listof', found)
+        self.assertIn('_listof_nickname', found)
+        self.assertIn('_listof_range_both', found)
+        self.assertIn('_listof_range_both_start', found)
+        self.assertIn('_listof_range_both_end', found)
+        self.assertEqual('raa0121', found['_listof_nickname'])
+        self.assertEqual(found['_listof_range_both_start'], '3')
+        self.assertEqual(found['_listof_range_both_end'], '12')
+
     def test_done_multi(self):
         found = parse("#todo done 0 1 13 04 ")
         self.assertIsNotNone(found)
