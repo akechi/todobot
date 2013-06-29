@@ -245,21 +245,23 @@ class ToDoBot(object):
             spool.add(found)
         return spool
 
-    def handle_done(self, spool, who, task_id=None):
-        """#todo done [id]"""
-        if task_id is None:
-            spool.write("そもそも予定じゃない")
-            return spool
-        found = ToDo.get(int(task_id))
-        if found is None:
-            spool.write("そんな予定はない")
-            return spool
-        if found.username.startswith('@') or found.username == who:
-            found.done()
-            t = datetime.now()
-            spool.write(found.prnformat(t))
-        else:
-            spool.write("それはお前の予定じゃない")
+    def handle_done(self, spool, who, **kw):
+        """#todo done [id] [id] [id] [id] [id]"""
+        xs = [v for k, v in kw.items() if k.startswith("task_ids")]
+        for task_id in xs:
+            if task_id is None:
+                spool.write("そもそも予定じゃない")
+                continue
+            found = ToDo.get(int(task_id))
+            if found is None:
+                spool.write("そんな予定はない")
+                continue
+            if found.username.startswith('@') or found.username == who:
+                found.done()
+                t = datetime.now()
+                spool.write(found.prnformat(t))
+            else:
+                spool.write("それはお前の予定じゃない")
         return spool
 
     def handle_edit(self, spool, who, task_id, description):
@@ -279,20 +281,22 @@ class ToDoBot(object):
             spool.write("それはお前の予定じゃない")
         return spool
 
-    def handle_del(self, spool, who, task_id):
-        """#todo del [id]"""
-        if task_id is None:
-            spool.write("そもそも予定じゃない")
-            return spool
-        found = ToDo.get(int(task_id))
-        if found is None:
-            spool.write("そんな予定はない")
-            return spool
-        if found.username.startswith('@') or found.username == who:
-            found.done()
-            spool.write('削除したよ')
-        else:
-            spool.write("それはお前の予定じゃない")
+    def handle_del(self, spool, who, **kw):
+        """#todo del [id] [id] [id] [id] [id]"""
+        xs = [v for k, v in kw.items() if k.startswith("task_ids")]
+        for task_id in xs:
+            if task_id is None:
+                spool.write("そもそも予定じゃない")
+                continue
+            found = ToDo.get(int(task_id))
+            if found is None:
+                spool.write("そんな予定はない")
+                continue
+            if found.username.startswith('@') or found.username == who:
+                found.delete()
+                spool.write('削除したよ')
+            else:
+                spool.write("それはお前の予定じゃない")
         return spool
 
     def handle_show(self, spool, who, task_id=None):

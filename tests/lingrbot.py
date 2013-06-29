@@ -76,7 +76,7 @@ class ToDoBotDipatchTestCase(unittest.TestCase):
         self.assertIn('handle_done', d)
         self.assertIn('handle_help', d)
         self.assertEqual(d['handle_add'], "#todo add [description]")
-        self.assertEqual("""#todo done [id]""", d['handle_done'])
+        self.assertEqual("""#todo done [id] [id] [id] [id] [id]""", d['handle_done'])
 
 
 
@@ -118,7 +118,7 @@ class ToDoBotDBTestCase(unittest.TestCase):
         s = self.bot.on_json(event)
 
         xs = flatten([x.splitlines() for x in s.render_for_lingr(500)])
-        self.assertIn('#todo done [id]', xs)
+        self.assertIn('#todo done [id] [id] [id] [id] [id]', xs)
         self.assertIn('#todo show [id]', xs)
 
 
@@ -128,7 +128,7 @@ class ToDoBotDBTestCase(unittest.TestCase):
         s = self.bot.on_json(event)
 
         xs = flatten([x.splitlines() for x in s.render_for_lingr(500)])
-        self.assertIn('#todo done [id]', xs)
+        self.assertIn('#todo done [id] [id] [id] [id] [id]', xs)
         self.assertNotIn('#todo show [id]', xs)
 
     def test_help_bad_arg(self):
@@ -138,7 +138,7 @@ class ToDoBotDBTestCase(unittest.TestCase):
 
 
         xs = flatten([x.splitlines() for x in s.render_for_lingr(500)])
-        self.assertIn('#todo done [id]', xs)
+        self.assertIn('#todo done [id] [id] [id] [id] [id]', xs)
         self.assertIn('#todo show [id]', xs)
 
     def test_add(self):
@@ -262,6 +262,20 @@ class ToDoBotDBTestCase(unittest.TestCase):
         result = models.ToDo.list_whose('bgnori', status=True)
         self.assertEqual(1, len([r for r in result]))
 
+    def test_done_multi(self):
+        req = self.raa0121.say('#todo done 1 2 3 4 5')
+        event = json.loads(req)['events'][0]
+        s = self.bot.on_json(event)
+
+        result = models.ToDo.list_whose('raa0121', status=False)
+        self.assertEqual(0, len([r for r in result]))
+        result = models.ToDo.list_whose('raa0121', status=True)
+        self.assertEqual(3, len([r for r in result]))
+        result = models.ToDo.list_whose('bgnori', status=False)
+        self.assertEqual(1, len([r for r in result]))
+        result = models.ToDo.list_whose('bgnori', status=True)
+        self.assertEqual(1, len([r for r in result]))
+
 
     def test_edit(self):
         req = self.raa0121.say('#todo edit 1 testing edit')
@@ -271,14 +285,24 @@ class ToDoBotDBTestCase(unittest.TestCase):
         self.assertIn("testing edit", t)
 
     def test_del(self):
-        req = self.raa0121.say('#todo done 2')
+        req = self.raa0121.say('#todo del 2')
         event = json.loads(req)['events'][0]
         s = self.bot.on_json(event)
 
+        result = models.ToDo.list_whose('raa0121', status=True)
+        self.assertEqual(1, len([r for r in result]))
         result = models.ToDo.list_whose('raa0121', status=False)
         self.assertEqual(1, len([r for r in result]))
-        result = models.ToDo.list_whose('bgnori', status=False)
-        self.assertEqual(1, len([r for r in result]))
+
+    def test_del_multi(self):
+        req = self.raa0121.say('#todo del 2 3 1')
+        event = json.loads(req)['events'][0]
+        s = self.bot.on_json(event)
+
+        result = models.ToDo.list_whose('raa0121', status=True)
+        self.assertEqual(0, len([r for r in result]))
+        result = models.ToDo.list_whose('raa0121', status=False)
+        self.assertEqual(0, len([r for r in result]))
 
     def test_show(self):
         req = self.raa0121.say('#todo show 3')
