@@ -6,37 +6,37 @@ import re
 
 SEP = '_'
 
-def make_path(parent, nth, name):
+def make_path(parent, name):
     #return parent + SEP + str(nth) + SEP + name
     return parent + SEP + name
 
 def Or(*fs):
-    def foo(parent, nth=0):
+    def foo(parent):
         return "(?:" + '|'.join([f(parent) for f in fs]) + ")"
     return foo
 
 def Cat(*fs):
-    def foo(parent, nth=0):
+    def foo(parent):
         return "(?:" + ''.join([f(parent) for f in fs]) + ")"
     return foo
 
 def Option(*fs):
-    def foo(parent, nth=0):
+    def foo(parent):
         return "(?:" + ''.join([f(parent) for f in fs]) + ")?"
     return foo
 
 def OneOrMore(*fs):
-    def foo(parent, nth=0):
+    def foo(parent):
         return "(?:" + ''.join([f(parent) for f in fs]) + ")+"
     return foo
 
 def ZeroOrMore(*fs):
-    def foo(parent, nth=0):
+    def foo(parent):
         return "(?:" + ''.join([f(parent) for f in fs]) + ")*"
     return foo
 
 def unnamed(pat, *fs):
-    def foo(parent, nth=0):
+    def foo(parent):
         return "(?:%s"%(pat,)+ Cat(*fs)(parent) + ")"
     return foo
 
@@ -50,22 +50,22 @@ ignore_rest = Option(OneOrMore(ws), blackhole)
 
 
 def named(name, pat, *fs):
-    def foo(parent, nth=0):
-        p = make_path(parent, nth, name)
+    def foo(parent):
+        p = make_path(parent, name)
         return r"(?P<%s>%s"%(p, pat) + Cat(*fs)(p) + ")"
     return foo
 
 _counted = {}
 def counted(name, pat, *fs):
-    def foo(parent, nth=0):
-        p = make_path(parent, nth, name)
+    def foo(parent):
+        p = make_path(parent, name)
         count = _counted.get(p, 0)
         _counted[p] = count + 1
         return r"(?P<%s%d>%s"%(p, count, pat) + Cat(*fs)(p) + ")"
     return foo
 
 def may_be(*fs):
-    def foo(parent, nth=0):
+    def foo(parent):
         return Option(OneOrMore(ws), Option(*fs))(parent)
     return foo
 
