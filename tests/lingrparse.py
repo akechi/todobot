@@ -377,6 +377,17 @@ class ParseTestCase(unittest.TestCase):
         self.assertIn('_listof_nickname', found)
         self.assertEqual('raa0121', found['_listof_nickname'])
 
+    def test_done_multi(self):
+        found = parse("#todo done 0 1 13 04 ")
+        self.assertIsNotNone(found)
+        self.assertIn('_hashtodo', found)
+        self.assertIn('_done', found)
+        self.assertIn('_done_task_ids0', found)
+        self.assertHas(found, '_done_task_ids0', '0')
+        self.assertHas(found, '_done_task_ids1', '1')
+        self.assertHas(found, '_done_task_ids2', '13')
+        self.assertHas(found, '_done_task_ids3', '04')
+
 
 if __name__ == '__main__':
     unittest.main()

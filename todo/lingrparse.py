@@ -75,6 +75,7 @@ nicknames = counted("nicknames", "[a-zA-Z@][a-zA-Z0-9]*")
 
 command = named("command", "[a-z]+")
 task_id = named("task_id", "\d+")
+task_ids = counted("task_ids", "\d+")
 
 end = named("end", "\d+")
 start = named("start", "\d+")
@@ -113,10 +114,18 @@ def acceptable(parent):
             may_be(task_id),
             ignore_rest),
         named("del", "del",
-            may_be(task_id),
+            may_be(task_ids),
+            may_be(task_ids),
+            may_be(task_ids),
+            may_be(task_ids),
+            may_be(task_ids),
             ignore_rest),
         named("done", "done",
-            may_be(task_id),
+            may_be(task_ids),
+            may_be(task_ids),
+            may_be(task_ids),
+            may_be(task_ids),
+            may_be(task_ids),
             ignore_rest),
         named("list", "list", 
             may_be(rangespec),
