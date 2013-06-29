@@ -238,7 +238,9 @@ class ToDoBot(object):
         if found is None:
             spool.write("そんな予定はない")
         else:
-            found.set_nickname(nickname)
+            old = found.description
+            new = old + "( moved from " + who + ")"
+            found.edit(username=nickname, description=new)
             spool.add(found)
         return spool
 
