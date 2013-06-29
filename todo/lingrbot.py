@@ -239,7 +239,7 @@ class ToDoBot(object):
             spool.write("そんな予定はない")
         else:
             old = found.description
-            new = old + "( moved from " + who + ")"
+            new = old + " ( moved from " + who + ")"
             found.edit(username=nickname, description=new)
             spool.add(found)
         return spool
