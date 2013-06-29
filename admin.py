@@ -15,7 +15,7 @@ from todo import models
 
 if sys.argv[1] == 'dumpfrom':
     fname = sys.argv[2]
-    engine = create_engine('sqlite:///%s'%(fname,), poolclass=QueuePool)
+    engine = create_engine('sqlite:///{}'.format(fname), poolclass=QueuePool)
     models.get_session = scoped_session(sessionmaker(bind=engine))
     for td in models.ToDo.list_all():
         print(td.to_json())
@@ -23,7 +23,7 @@ if sys.argv[1] == 'dumpfrom':
 
 elif sys.argv[1] == 'loadto':
     fname = sys.argv[2]
-    engine = create_engine('sqlite:///%s'%(fname), poolclass=QueuePool)
+    engine = create_engine('sqlite:///{}'.format(fname), poolclass=QueuePool)
     models.get_session = scoped_session(sessionmaker(bind=engine))
 
     models.make_tables()
