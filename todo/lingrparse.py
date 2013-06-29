@@ -7,7 +7,6 @@ import re
 SEP = '_'
 
 def make_path(parent, name):
-    #return parent + SEP + str(nth) + SEP + name
     return parent + SEP + name
 
 def Or(*fs):

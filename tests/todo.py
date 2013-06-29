@@ -25,6 +25,8 @@ class ToDoTestCase(unittest.TestCase):
         models.get_session = scoped_session(sessionmaker(bind=self.conn))
         models.make_tables()
 
+        self.now = datetime(2000, 1, 3, 12, 00, 00)
+
     def test_sanity(self):
         td = models.ToDo(username='username', description='description', created_at=J2000, status=False)
         self.assertEqual("username", td.username)
@@ -38,23 +40,23 @@ class ToDoTestCase(unittest.TestCase):
         s.add(td)
         s.commit()
 
-        x = td.prnformat()
-        self.assertEqual('[_] 0001 username 2000-01-01 12:00:00 description', x)
+        x = td.prnformat(self.now)
+        self.assertEqual('[_] 0001 username 2日前 description', x)
 
         s = models.get_session()
         td2 = models.ToDo(username='username', description='description', created_at=J2000, status=True)
         s.add(td2)
         s.commit()
 
-        y = td2.prnformat()
-        self.assertEqual('[X] 0002 username 2000-01-01 12:00:00 description', y)
+        y = td2.prnformat(self.now)
+        self.assertEqual('[X] 0002 username 2日前 description', y)
 
 
     def test_add(self):
         td = models.ToDo.add(username='username', description='description', created_at=J2000, status=True)
 
-        y = td.prnformat()
-        self.assertEqual('[X] 0001 username 2000-01-01 12:00:00 description', y)
+        y = td.prnformat(self.now)
+        self.assertEqual('[X] 0001 username 2日前 description', y)
 
     def test_get(self):
         models.ToDo.add(username='username', description='description', created_at=J2000, status=True)
@@ -62,15 +64,15 @@ class ToDoTestCase(unittest.TestCase):
         s = models.get_session()
         td = models.ToDo.get(1)
 
-        y = td.prnformat()
-        self.assertEqual('[X] 0001 username 2000-01-01 12:00:00 description', y)
+        y = td.prnformat(self.now)
+        self.assertEqual('[X] 0001 username 2日前 description', y)
 
     def test_done(self):
         td = models.ToDo.add(username='username', description='description', created_at=J2000, status=False)
         td.done()
 
-        y = td.prnformat()
-        self.assertEqual('[X] 0001 username 2000-01-01 12:00:00 description', y)
+        y = td.prnformat(self.now)
+        self.assertEqual('[X] 0001 username 2日前 description', y)
 
     def test_delete(self):
         td = models.ToDo.add(username='username', description='description', created_at=J2000, status=False)
@@ -138,8 +140,8 @@ class ToDoTestCase(unittest.TestCase):
         td = models.ToDo.add(username='username', description='description', created_at=J2000, status=True)
         td = td.edit(description='yet another description')
 
-        y = td.prnformat()
-        self.assertEqual('[X] 0001 username 2000-01-01 12:00:00 yet another description', y)
+        y = td.prnformat(self.now)
+        self.assertEqual('[X] 0001 username 2日前 yet another description', y)
 
 
 if __name__ == '__main__':

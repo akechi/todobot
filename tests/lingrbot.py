@@ -98,6 +98,7 @@ class ToDoBotDBTestCase(unittest.TestCase):
         self.raa0121 = LingrUser('raa0121')
         self.xyz = LingrUser('xyz')
 
+        self.now = datetime.now()
 
     def tearDown(self):
         self.engine.dispose()
@@ -176,7 +177,7 @@ class ToDoBotDBTestCase(unittest.TestCase):
         event = json.loads(req)['events'][0]
         s = self.bot.on_json(event)
 
-        xs = [r.prnformat() for r in s.rows]
+        xs = [r.prnformat(self.now) for r in s.rows]
         self.assertEqual(1, len([x for x in xs if x.startswith('[X]')]))
         self.assertEqual(2, len([x for x in xs if x.startswith('[_]')]))
 
@@ -186,7 +187,7 @@ class ToDoBotDBTestCase(unittest.TestCase):
         event = json.loads(req)['events'][0]
         s = self.bot.on_json(event)
 
-        xs = [r.prnformat() for r in s.rows]
+        xs = [r.prnformat(self.now) for r in s.rows]
         self.assertEqual(1, len([x for x in xs if x.startswith('[X]')]))
         self.assertEqual(0, len([x for x in xs if x.startswith('[_]')]))
 
@@ -195,7 +196,7 @@ class ToDoBotDBTestCase(unittest.TestCase):
         event = json.loads(req)['events'][0]
         s = self.bot.on_json(event)
 
-        xs = [r.prnformat() for r in s.rows]
+        xs = [r.prnformat(self.now) for r in s.rows]
         self.assertEqual(0, len([x for x in xs if x.startswith('[X]')]))
         self.assertEqual(2, len([x for x in xs if x.startswith('[_]')]))
 
@@ -204,7 +205,7 @@ class ToDoBotDBTestCase(unittest.TestCase):
         event = json.loads(req)['events'][0]
         s = self.bot.on_json(event)
 
-        xs = [r.prnformat() for r in s.rows]
+        xs = [r.prnformat(self.now) for r in s.rows]
         self.assertEqual(0, len([x for x in xs if x.startswith('[X]')]))
         self.assertEqual(1, len([x for x in xs if x.startswith('[_]')]))
 
@@ -214,7 +215,7 @@ class ToDoBotDBTestCase(unittest.TestCase):
         event = json.loads(req)['events'][0]
         s = self.bot.on_json(event)
 
-        xs = [r.prnformat() for r in s.rows]
+        xs = [r.prnformat(self.now) for r in s.rows]
         self.assertEqual(1, len([x for x in xs if x.startswith('[X]')]))
         self.assertEqual(1, len([x for x in xs if x.startswith('[_]')]))
 
@@ -223,7 +224,7 @@ class ToDoBotDBTestCase(unittest.TestCase):
         event = json.loads(req)['events'][0]
         s = self.bot.on_json(event)
 
-        xs = [r.prnformat() for r in s.rows]
+        xs = [r.prnformat(self.now) for r in s.rows]
         self.assertEqual(1, len([x for x in xs if x.startswith('[X]')]))
         self.assertEqual(0, len([x for x in xs if x.startswith('[_]')]))
 
@@ -232,7 +233,7 @@ class ToDoBotDBTestCase(unittest.TestCase):
         event = json.loads(req)['events'][0]
         s = self.bot.on_json(event)
 
-        xs = [r.prnformat() for r in s.rows]
+        xs = [r.prnformat(self.now) for r in s.rows]
         self.assertEqual(0, len([x for x in xs if x.startswith('[X]')]))
         self.assertEqual(1, len([x for x in xs if x.startswith('[_]')]))
 
@@ -242,7 +243,7 @@ class ToDoBotDBTestCase(unittest.TestCase):
         event = json.loads(req)['events'][0]
         s = self.bot.on_json(event)
 
-        xs = [r.prnformat() for r in s.rows]
+        xs = [r.prnformat(self.now) for r in s.rows]
         self.assertEqual(6, len([x for x in xs if x.startswith('[_]')]))
         self.assertEqual(2, len([x for x in xs if x.startswith('[X]')]))
 
@@ -285,7 +286,7 @@ class ToDoBotDBTestCase(unittest.TestCase):
         event = json.loads(req)['events'][0]
         s = self.bot.on_json(event)
 
-        xs = [r.prnformat() for r in s.rows]
+        xs = [r.prnformat(self.now) for r in s.rows]
         self.assertEqual(1, len([x for x in xs if x.startswith('[X]')]))
         self.assertEqual(0, len([x for x in xs if x.startswith('[_]')]))
 
@@ -324,13 +325,14 @@ class ToDoBotListCommandTestCase(unittest.TestCase):
             td = models.ToDo.from_json(line)
         
         self.raa0121 = LingrUser('raa0121')
+        self.now = datetime.now()
 
     def test_start_hyph_end_jpkw(self):
         req = self.raa0121.say('#todo list 0-10 イヤホン')
         event = json.loads(req)['events'][0]
         s = self.bot.on_json(event)
 
-        xs = [r.prnformat() for r in s.rows]
+        xs = [r.prnformat(self.now) for r in s.rows]
         self.assertEqual(0, len([x for x in xs if x.startswith('[X]')]))
         self.assertEqual(1, len([x for x in xs if x.startswith('[_]')]))
         self.assertIn('ローソンでLチキとイヤホン買いに行く', xs[0])
@@ -340,7 +342,7 @@ class ToDoBotListCommandTestCase(unittest.TestCase):
         event = json.loads(req)['events'][0]
         s = self.bot.on_json(event)
 
-        xs = [r.prnformat() for r in s.rows]
+        xs = [r.prnformat(self.now) for r in s.rows]
         self.assertEqual(0, len([x for x in xs if x.startswith('[X]')]))
         self.assertEqual(2, len([x for x in xs if x.startswith('[_]')]))
 
@@ -349,7 +351,7 @@ class ToDoBotListCommandTestCase(unittest.TestCase):
         event = json.loads(req)['events'][0]
         s = self.bot.on_json(event)
 
-        xs = [r.prnformat() for r in s.rows]
+        xs = [r.prnformat(self.now) for r in s.rows]
         self.assertEqual(0, len([x for x in xs if x.startswith('[X]')]))
         self.assertEqual(1, len([x for x in xs if x.startswith('[_]')]))
 

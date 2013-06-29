@@ -34,7 +34,8 @@ class Spool(object):
 
     def render_for_lingr(self, size):
         if self.rows:
-            self.rows = [r.prnformat() for r in self.rows]
+            t = datetime.now()
+            self.rows = [r.prnformat(t) for r in self.rows]
         else:
             self.rows = [line for line in self.text.splitlines()]
         buf = []
@@ -255,7 +256,8 @@ class ToDoBot(object):
             return spool
         if found.username.startswith('@') or found.username == who:
             found.done()
-            spool.write(found.prnformat())
+            t = datetime.now()
+            spool.write(found.prnformat(t))
         else:
             spool.write("それはお前の予定じゃない")
         return spool
@@ -271,7 +273,8 @@ class ToDoBot(object):
             return spool
         if found.username.startswith('@') or found.username == who:
             found.edit(description=description)
-            spool.write(found.prnformat())
+            t = datetime.now()
+            spool.write(found.prnformat(t))
         else:
             spool.write("それはお前の予定じゃない")
         return spool
@@ -325,7 +328,8 @@ class ToDoBot(object):
         if self.is_admin(who):
             if task_id is not None:
                 td = ToDo.get(int(task_id))
-                spool.add(td.prnformat())
+                t = datetime.now()
+                spool.add(td.prnformat(t))
         return spool
 
     def handle_about(self, spool, who):

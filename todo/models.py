@@ -38,7 +38,7 @@ class ToDo(Base):
             id=self.id, 
             username=self.username, 
             description=self.description,
-            created_at=str(self.created_at), # 2013-06-23 22:11:18
+            created_at=str(self.created_at), # 2013-06-23 22:11:18.01234
             status=self.status))
         return j
 
@@ -51,17 +51,19 @@ class ToDo(Base):
             d['created_at'] = None
         return cls.add(**d)
 
-    def prnformat(self):
-        s = []
+    def prnformat(self, ref):
         if self.status:
-            s.append('[X]')
+            s = ['[X]']
         else:
-            s.append('[_]')
-        s.append("%04d" % self.id)
-        s.append(self.username)
-        s.append(str(self.created_at))
-        s.append(self.description)
-        return ' '.join(s)
+            s = ['[_]']
+        if self.created_at is not None:
+           delta = (ref - self.created_at).days
+        else:
+           delta = '???'
+
+        t = ["%04d" % self.id, self.username, "%s日前"%(delta,), self.description]
+        # 2013-06-23 22:11:18.01234
+        return ' '.join(s+t)
 
     @classmethod
     def add(cls, **kw):
