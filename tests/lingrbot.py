@@ -84,7 +84,6 @@ class ToDoBotDBTestCase(unittest.TestCase):
     def setUp(self):
         self.engine = create_engine('sqlite:///:memory:', poolclass=QueuePool)
 
-
         conn = self.engine.connect()
         self.conn = conn
         models.get_session = scoped_session(sessionmaker(bind=self.conn))
@@ -160,6 +159,17 @@ class ToDoBotDBTestCase(unittest.TestCase):
         result = models.ToDo.list_whose('bgnori', status=False)
         self.assertEqual(2, len([r for r in result]))
 
+    def test_addto_multi(self):
+        req = self.raa0121.say('#todo addto bgnori,raa0121,mopp test_add')
+        event = json.loads(req)['events'][0]
+        s = self.bot.on_json(event)
+
+        result = models.ToDo.list_whose('raa0121', status=False)
+        self.assertEqual(3, len([r for r in result]))
+        result = models.ToDo.list_whose('bgnori', status=False)
+        self.assertEqual(2, len([r for r in result]))
+        result = models.ToDo.list_whose('mopp', status=False)
+        self.assertEqual(1, len([r for r in result]))
 
     def test_list_all(self):
         req = self.raa0121.say('#todo list-all')
@@ -301,7 +311,6 @@ LISTCOMMAND_TESTDATA = """\
 class ToDoBotListCommandTestCase(unittest.TestCase):
     def setUp(self):
         self.engine = create_engine('sqlite:///:memory:', poolclass=QueuePool)
-
 
         conn = self.engine.connect()
         self.conn = conn

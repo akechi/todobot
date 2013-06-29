@@ -48,12 +48,21 @@ expect_nohyph = unnamed("(?!-)")
 
 ignore_rest = Option(OneOrMore(ws), blackhole)
 
+
 def named(name, pat, *fs):
     def foo(parent, nth=0):
         p = make_path(parent, nth, name)
         return r"(?P<%s>%s"%(p, pat) + Cat(*fs)(p) + ")"
     return foo
 
+_counted = {}
+def counted(name, pat, *fs):
+    def foo(parent, nth=0):
+        p = make_path(parent, nth, name)
+        count = _counted.get(p, 0)
+        _counted[p] = count + 1
+        return r"(?P<%s%d>%s"%(p, count, pat) + Cat(*fs)(p) + ")"
+    return foo
 
 def may_be(*fs):
     def foo(parent, nth=0):
@@ -63,6 +72,7 @@ def may_be(*fs):
 
 description = named("description", ".+")
 nickname = named("nickname", "[a-zA-Z@][a-zA-Z0-9]*")
+nicknames = counted("nicknames", "[a-zA-Z@][a-zA-Z0-9]*")
 
 command = named("command", "[a-z]+")
 task_id = named("task_id", "\d+")
@@ -87,11 +97,11 @@ def acceptable(parent):
         named("add", "add", may_be(description)),
         named("addto", "addto", 
             may_be(
-                Option(Cat(named("u1", "", nickname), comma)),
-                Option(Cat(named("u2", "", nickname), comma)),
-                Option(Cat(named("u3", "", nickname), comma)),
-                Option(Cat(named("u4", "", nickname), comma)),
-                ZeroOrMore(named("too_many", "", Cat(nickname, comma))), 
+                Option(nicknames, comma),
+                Option(nicknames, comma),
+                Option(nicknames, comma),
+                Option(nicknames, comma),
+                ZeroOrMore(named("too_many", "", nickname, comma)), 
                 Option(nickname, unnamed("(?!,)"))),
             may_be(description)),
         named("help", "help",

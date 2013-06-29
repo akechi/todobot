@@ -156,7 +156,7 @@ class ToDoBot(object):
         td = ToDo.add(username=nickname, description=description, created_at=t, status=0)
         spool.add(td)
         for k, n in kw.items():
-            if k.endswith('nickname'):
+            if k[:-1].endswith('nicknames'):
                 td = ToDo.add(username=n, description=description, created_at=t, status=0)
                 spool.add(td)
         return spool
