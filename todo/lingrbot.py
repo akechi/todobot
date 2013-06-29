@@ -71,7 +71,7 @@ class Lingrman(object):
 
 
 class ToDoBot(object):
-    nohelp = "*** No help on %s"
+    nohelp = "*** No help on {}"
     help_postfix = """\r\nこのボットはあるふぁばんです\r\n何があっても知りません"""
     prefix = 'handle_'
     adminnicks = set(['aoisensi'])
@@ -152,7 +152,7 @@ class ToDoBot(object):
         if "too_many_nickname" in kw:
             spool.write("Too many nicknames!")
             return spool
-        description += ' (by %s) ' % who #event['message']['speaker_id']
+        description += ' (by {}) '.format(who) #event['message']['speaker_id']
         t = datetime.now()
         td = ToDo.add(username=nickname, description=description, created_at=t, status=0)
         spool.add(td)
@@ -166,14 +166,14 @@ class ToDoBot(object):
         """#todo list-all"""
         for td in ToDo.list_whose(who):
             spool.add(td)
-        spool.write('nothing found for %s'%(who,))
+        spool.write('nothing found for {}'.format(who))
         return spool
 
     def handle_list_done(self, spool, who):
         """#todo list-done"""
         for td in ToDo.list_whose(who, status=True):
             spool.add(td)
-        spool.write('nothing found for %s'%(who,))
+        spool.write('nothing found for {}'.format(who))
         return spool
 
     def handle_list(self, spool, who, **kw):
@@ -191,7 +191,7 @@ class ToDoBot(object):
         if keyword is not None:
             #FIXME danger!
             for td in ToDo.list_whose(who, status=False).\
-                filter(ToDo.description.like('%%%s%%'%(keyword, ))).\
+                filter(ToDo.description.like('%{}%'.format(keyword))).\
                 offset(start).limit(limit):
                 spool.add(td)
         else:
@@ -208,14 +208,14 @@ class ToDoBot(object):
 
         for td in ToDo.list_whose(nickname):
             spool.add(td)
-        spool.write('nothing found for %s'%(nickname,))
+        spool.write('nothing found for {}'.format(nickname))
         return spool
 
     def handle_listof_done(self, spool, who, nickname):
         """#todo listof-done [nickname]"""
         for td in ToDo.list_whose(nickname, status=True):
             spool.add(td)
-        spool.write('nothing found for %s'%(nickname,))
+        spool.write('nothing found for {}'.format(nickname))
         return spool
 
     def handle_listof(self, spool, who, nickname, **kw):
@@ -226,7 +226,7 @@ class ToDoBot(object):
         """#todo list-everything"""
         for td in ToDo.list_all():
             spool.add(td)
-        spool.write('nothing found for %s'%(who,))
+        spool.write('nothing found for {}'.format(who))
         return spool
 
     def handle_moveto(self, spool, who, nickname, task_id):
