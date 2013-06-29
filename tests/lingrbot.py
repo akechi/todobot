@@ -356,6 +356,49 @@ class ToDoBotListCommandTestCase(unittest.TestCase):
         self.assertEqual(1, len([x for x in xs if x.startswith('[_]')]))
 
 
+
+GROUPTESTDATA = """\
+{"id": 216, "created_at": "2013-06-15 08:41:14", "username": "@VAC", "description": "Vim \u306b\u30d5\u30a1\u30a4\u30eb\u3092\u30c9\u30ed\u30c3\u30d7\u3057\u305f\u6642\u306b\u65b0\u3057\u3044\u30bf\u30d6\u3067\u958b\u3044\u3066\u6b32\u3057\u3044", "status": false}
+{"id": 217, "created_at": "2013-06-15 08:42:29", "username": "@VAC", "description": "neocomplete.vim \u3078\u306e\u79fb\u884c\u8a18\u4e8b", "status": false}
+{"id": 219, "created_at": "2013-06-15 18:41:57", "username": "@VAC", "description": "autoload\u304b\u3089 doc \u96db\u4f5c\u3063\u3066\u304f\u308c\u308b\u30d7\u30e9\u30b0\u30a4\u30f3\u304c\u307b\u3057\u3044", "status": false}
+{"id": 220, "created_at": "2013-06-16 00:36:15", "username": "@VAC", "description": "reunions.vim\u306b\u3064\u3044\u3066", "status": false}
+"""
+
+class ToDoBotGroupTestCase(unittest.TestCase):
+    def setUp(self):
+        self.engine = create_engine('sqlite:///:memory:', poolclass=QueuePool)
+
+        conn = self.engine.connect()
+        self.conn = conn
+        models.get_session = scoped_session(sessionmaker(bind=self.conn))
+        self.postman = Postman()
+        self.bot = ToDoBot(self.postman)
+    
+        models.make_tables()
+
+        for line in io.StringIO(GROUPTESTDATA):
+            td = models.ToDo.from_json(line)
+        
+        self.raa0121 = LingrUser('raa0121')
+
+        self.now = datetime.now()
+
+    def test_listof(self):
+        pass
+
+    def test_addto(self):
+        pass
+
+    def test_del(self):
+        pass
+
+    def test_done(self):
+        pass
+
+    def test_edit(self):
+        pass
+
+
 if __name__ == '__main__':
     unittest.main()
 
