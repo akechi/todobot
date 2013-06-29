@@ -349,6 +349,7 @@ class ToDoBotListCommandTestCase(unittest.TestCase):
             td = models.ToDo.from_json(line)
         
         self.raa0121 = LingrUser('raa0121')
+        self.xyz = LingrUser('xyz')
         self.now = datetime.now()
 
     def test_start_hyph_end_jpkw(self):
@@ -378,6 +379,16 @@ class ToDoBotListCommandTestCase(unittest.TestCase):
         xs = [r.prnformat(self.now) for r in s.rows]
         self.assertEqual(0, len([x for x in xs if x.startswith('[X]')]))
         self.assertEqual(1, len([x for x in xs if x.startswith('[_]')]))
+
+    def test_listof_start_jpkw(self):
+        req = self.xyz.say('#todo listof raa0121 1- 割')
+        event = json.loads(req)['events'][0]
+        s = self.bot.on_json(event)
+
+        xs = [r.prnformat(self.now) for r in s.rows]
+        self.assertEqual(0, len([x for x in xs if x.startswith('[X]')]))
+        self.assertEqual(1, len([x for x in xs if x.startswith('[_]')]))
+
 
 
 

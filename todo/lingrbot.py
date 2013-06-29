@@ -177,7 +177,7 @@ class ToDoBot(object):
         return spool
 
     def handle_list(self, spool, who, **kw):
-        """#todo list"""
+        """#todo list [start]-[end] [keyword]"""
         start = kw.get('range_start',
                 kw.get('range_both_start', 0))
         end = kw.get('range_end',
@@ -218,12 +218,9 @@ class ToDoBot(object):
         spool.write('nothing found for %s'%(nickname,))
         return spool
 
-    def handle_listof(self, spool, who, nickname):
-        """#todo listof [nickname]"""
-        for td in ToDo.list_whose(nickname, status=False):
-            spool.add(td)
-        spool.write('nothing found for %s'%(nickname,))
-        return spool
+    def handle_listof(self, spool, who, nickname, **kw):
+        """#todo listof [nickname] [start-end] [keyword]"""
+        return self.handle_list(spool, nickname, **kw)
 
     def handle_list_everything(self, spool, who):
         """#todo list-everything"""
