@@ -122,7 +122,7 @@ class ToDoBot(object):
                     yield k, getattr(self, k)
 
     def make_help_map(self):
-        return dict([(k, getattr(m, "__doc__", self.nohelp%(k,))) for k, m in self.get_handle_XXX()])
+        return dict([(k, getattr(m, "__doc__", self.nohelp.format(k))) for k, m in self.get_handle_XXX()])
 
     def make_handler_name(self, s):
         return self.prefix + s.replace('-', '_')
@@ -198,7 +198,7 @@ class ToDoBot(object):
             for td in ToDo.list_whose(who, status=False).\
                 offset(start).limit(limit):
                 spool.add(td)
-        spool.write('nothing found for %s'%(who,))
+        spool.write('nothing found for {}'.format(who))
         return spool
 
     def handle_listof_all(self, spool, who, nickname=None):
