@@ -13,15 +13,17 @@ from todo import models
 
 
 
-if sys.argv[1] == 'dump':
-    engine = create_engine('sqlite:///./todo.sqlite', poolclass=QueuePool)
+if sys.argv[1] == 'dumpfrom':
+    fname = sys.argv[2]
+    engine = create_engine('sqlite:///%s'%(fname,), poolclass=QueuePool)
     models.get_session = scoped_session(sessionmaker(bind=engine))
     for td in models.ToDo.list_all():
         print(td.to_json())
 
 
-elif sys.argv[1] == 'load':
-    engine = create_engine('sqlite:///:memory:', poolclass=QueuePool)
+elif sys.argv[1] == 'loadto':
+    fname = sys.argv[2]
+    engine = create_engine('sqlite:///%s'%(fname), poolclass=QueuePool)
     models.get_session = scoped_session(sessionmaker(bind=engine))
 
     models.make_tables()
