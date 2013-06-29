@@ -10,6 +10,7 @@ Base = declarative_base()
 
 from sqlalchemy import Column, Integer, String, DateTime, Boolean
 
+import humanize
 
 get_session = None
 """
@@ -57,11 +58,11 @@ class ToDo(Base):
         else:
             s = ['[_]']
         if self.created_at is not None:
-           delta = (ref - self.created_at).days
+           t = humanize.naturaltime(ref - self.created_at)
         else:
-           delta = '???'
+           t = '???'
 
-        t = ["%04d" % self.id, self.username, "%s日前"%(delta,), self.description]
+        t = ["%04d" % self.id, self.username, t, self.description]
         # 2013-06-23 22:11:18.01234
         return ' '.join(s+t)
 

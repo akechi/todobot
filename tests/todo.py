@@ -41,7 +41,7 @@ class ToDoTestCase(unittest.TestCase):
         s.commit()
 
         x = td.prnformat(self.now)
-        self.assertEqual('[_] 0001 username 2日前 description', x)
+        self.assertEqual('[_] 0001 username 2 days ago description', x)
 
         s = models.get_session()
         td2 = models.ToDo(username='username', description='description', created_at=J2000, status=True)
@@ -49,14 +49,14 @@ class ToDoTestCase(unittest.TestCase):
         s.commit()
 
         y = td2.prnformat(self.now)
-        self.assertEqual('[X] 0002 username 2日前 description', y)
+        self.assertEqual('[X] 0002 username 2 days ago description', y)
 
 
     def test_add(self):
         td = models.ToDo.add(username='username', description='description', created_at=J2000, status=True)
 
         y = td.prnformat(self.now)
-        self.assertEqual('[X] 0001 username 2日前 description', y)
+        self.assertEqual('[X] 0001 username 2 days ago description', y)
 
     def test_get(self):
         models.ToDo.add(username='username', description='description', created_at=J2000, status=True)
@@ -65,14 +65,14 @@ class ToDoTestCase(unittest.TestCase):
         td = models.ToDo.get(1)
 
         y = td.prnformat(self.now)
-        self.assertEqual('[X] 0001 username 2日前 description', y)
+        self.assertEqual('[X] 0001 username 2 days ago description', y)
 
     def test_done(self):
         td = models.ToDo.add(username='username', description='description', created_at=J2000, status=False)
         td.done()
 
         y = td.prnformat(self.now)
-        self.assertEqual('[X] 0001 username 2日前 description', y)
+        self.assertEqual('[X] 0001 username 2 days ago description', y)
 
     def test_delete(self):
         td = models.ToDo.add(username='username', description='description', created_at=J2000, status=False)
@@ -141,7 +141,27 @@ class ToDoTestCase(unittest.TestCase):
         td = td.edit(description='yet another description')
 
         y = td.prnformat(self.now)
-        self.assertEqual('[X] 0001 username 2日前 yet another description', y)
+        self.assertEqual('[X] 0001 username 2 days ago yet another description', y)
+
+    def test_show_a_day_ago(self):
+        td = models.ToDo.add(username='username', description='description', created_at=J2000, status=True)
+        now = datetime(2000, 1, 2, 12, 00, 00)
+        y = td.prnformat(now)
+        self.assertEqual('[X] 0001 username a day ago description', y)
+
+    def test_show_an_hour_ago(self):
+        td = models.ToDo.add(username='username', description='description', created_at=J2000, status=True)
+        now = datetime(2000, 1, 1, 13, 00, 00)
+        y = td.prnformat(now)
+        self.assertEqual('[X] 0001 username an hour ago description', y)
+
+    def test_show_3min_ago(self):
+        td = models.ToDo.add(username='username', description='description', created_at=J2000, status=True)
+        now = datetime(2000, 1, 1, 12, 3, 00)
+        y = td.prnformat(now)
+        self.assertEqual('[X] 0001 username 3 minutes ago description', y)
+
+
 
 
 if __name__ == '__main__':
