@@ -1,56 +1,73 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
-SEP = '_'
 
 
-def make_path(parent, name):
-    return parent + SEP + name
+class Base(object):
+    def __init__(self, *fs):
+        self.fs = fs
 
-def Or(*fs):
-    def foo(parent):
-        return "(?:" + '|'.join([f(parent) for f in fs]) + ")"
-    return foo
-
-def Cat(*fs):
-    def foo(parent):
-        return "(?:" + ''.join([f(parent) for f in fs]) + ")"
-    return foo
-
-def Option(*fs):
-    def foo(parent):
-        return "(?:" + ''.join([f(parent) for f in fs]) + ")?"
-    return foo
-
-def OneOrMore(*fs):
-    def foo(parent):
-        return "(?:" + ''.join([f(parent) for f in fs]) + ")+"
-    return foo
-
-def ZeroOrMore(*fs):
-    def foo(parent):
-        return "(?:" + ''.join([f(parent) for f in fs]) + ")*"
-    return foo
-
-def unnamed(pat, *fs):
-    def foo(parent):
-        return "(?:{}".format(pat)+ Cat(*fs)(parent) + ")"
-    return foo
+    def __call__(self, parent):
+        return "(?:{}){}".format(
+                self.c.join([f(parent) for f in self.fs]),
+                self.d)
 
 
-def named(name, pat, *fs):
-    def foo(parent):
-        p = make_path(parent, name)
-        return r"(?P<{0}>{1}".format(p, pat) + Cat(*fs)(p) + ")"
-    return foo
+class Or(Base):
+    c = '|'
+    d = ''
 
-_counted = {}
-def counted(name, pat, *fs):
-    def foo(parent):
-        p = make_path(parent, name)
-        count = _counted.get(p, 0)
-        _counted[p] = count + 1
-        return r"(?P<{0}{1}>{2}".format(p, count, pat) + Cat(*fs)(p) + ")"
-    return foo
+class Cat(Base):
+    c = ''
+    d = ''
 
 
+class Option(Base):
+    c = ''
+    d = '?'
+
+class OneOrMore(Base):
+    c = ''
+    d = '+'
+
+class ZeroOrMore(Base):
+    c = ''
+    d = '*'
+
+
+class unnamed(Base):
+    def __init__(self, pat, *fs):
+        Base.__init__(self, *fs)
+        self.pat = pat
+    def __call__(self, parent):
+        return "(?:{}".format(self.pat)+ Cat(*(self.fs))(parent) + ")"
+
+
+class named(unnamed):
+    SEP = '_'
+
+    def __init__(self, name, pat, *fs):
+        unnamed.__init__(self, pat, *fs)
+        self.name = name
+
+    def make_path(self, parent):
+        return parent + self.SEP + self.name
+
+    def __call__(self, parent):
+        p = self.make_path(parent)
+        return r"(?P<{0}>{1}{2})".format(p, self.pat, Cat(*(self.fs))(p))
+
+
+class counted(named):
+    #def counted(name, pat, *fs):
+    _counted = {}
+    def __call__(self, parent):
+        p = self.make_path(parent)
+        count = self._counted.get(p, 0)
+        self._counted[p] = count + 1
+        return r"(?P<{0}{1}>{2}{3})".format(p, count, self.pat, Cat(*self.fs)(p))
+
+
+if __name__ == '__main__':
+    blackhole = unnamed(".*")
+    print(blackhole('foo'))
