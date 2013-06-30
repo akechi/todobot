@@ -70,8 +70,8 @@ def may_be(*fs):
 
 
 description = named("description", ".+")
-nickname = named("nickname", "[a-zA-Z@][a-zA-Z0-9]*")
-nicknames = counted("nicknames", "[a-zA-Z@][a-zA-Z0-9]*")
+nickname = named("nickname", "[a-zA-Z@][a-zA-Z0-9_]*")
+nicknames = counted("nicknames", "[a-zA-Z@][a-zA-Z0-9_]*")
 
 command = named("command", "[a-z]+")
 task_id = named("task_id", "\d+")
