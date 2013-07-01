@@ -2,6 +2,7 @@
 # -*- coding: utf-8 -*-
 
 
+import re
 
 class Base(object):
     def __init__(self, *fs):
@@ -11,6 +12,10 @@ class Base(object):
         return "(?:{}){}".format(
                 self.c.join([f(parent) for f in self.fs]),
                 self.d)
+
+    def compile(self):
+        pat = self('')
+        return re.compile(pat)
 
 
 class Or(Base):
@@ -71,3 +76,5 @@ class counted(named):
 if __name__ == '__main__':
     blackhole = unnamed(".*")
     print(blackhole('foo'))
+
+
