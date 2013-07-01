@@ -4,6 +4,37 @@
 
 import re
 
+
+class MOWrapper(object):
+    def __init__(self, rxw, txt): 
+        self.patw = rxw.patw
+        self.rx = rxw.rx
+        self.mo = self.rx.match(txt)
+        if self.mo is not None:
+           d = dict([(k, v) for k, v in self.mo.groupdict().items() if v is not None])
+           self.d = d
+
+    def groupdict(self):
+        assert self.mo
+        return self.mo.groupdict()
+
+
+class RXWrapper(object):
+    def __init__(self, patw): 
+        self.patw = patw
+        self.rx = re.compile(patw.make(''))
+
+    def match(self, txt):
+        mow = MOWrapper(self, txt)
+        if mow.mo is None:
+            return None
+        return mow
+
+    @property
+    def pattern(self):
+        return self.rx.pattern
+
+
 class Base(object):
     def __init__(self, *fs):
         self.fs = fs
@@ -14,8 +45,7 @@ class Base(object):
                 self.d)
 
     def compile(self):
-        pat = self.make('')
-        return re.compile(pat)
+        return RXWrapper(self)
 
 
 class Or(Base):
