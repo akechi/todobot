@@ -15,10 +15,10 @@ expect_nohyph = unnamed("(?!-)")
 
 ignore_rest = Option(OneOrMore(ws), blackhole)
 
-def may_be(*fs):
-    def foo(parent):
-        return Option(OneOrMore(ws), Option(*fs))(parent)
-    return foo
+
+class may_be(Base):
+    def make(self, parent):
+        return Option(OneOrMore(ws), Option(*(self.fs))).make(parent)
 
 
 description = named("description", ".+")
