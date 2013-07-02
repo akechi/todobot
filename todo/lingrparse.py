@@ -39,7 +39,7 @@ rangespec = named("range", "",
             named('both', '', start, hyph, end),
             ))
 
-        keyword = named("keyword", "\w+")
+keyword = named("keyword", "\w+")
 
 
 builder = Cat(
