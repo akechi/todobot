@@ -4,57 +4,40 @@
 import re
 
 
-class MOWrapper(object):
-    def __init__(self, rxw, txt): 
-        self.patw = rxw.patw
-        self.rx = rxw.rx
-        self.mo = self.rx.match(txt)
-        if self.mo is not None:
-           d = dict([(k, v) for k, v in self.mo.groupdict().items() if v is not None])
-           self.d = d
+class Node(object):
+    def __init__(self, name, parent=None):
+        self.name = name
+        self.children = {}
+        self.parent = parent
 
-    def groupdict(self):
-        assert self.mo
-        return self.mo.groupdict()
+    def make_child(self, name):
+        assert name not in self.children
+        c = Node(name, self)
+        self.children[name] = c
 
-    def smart(self):
-        xxs = [tuple([x for x in k.split("_") if x]) for k in self.d.keys()]
-        xxs.sort(key=lambda xs:len(xs))
-        print(xxs)
+    def __getitem__(self, name):
+        return self.children[name]
 
-        root = {}
-        for xs in xxs:
-            r = root
-            for x in xs:
-                c = r.get(x, None)
-                if c is None:
-                    c = {}
-                r[x] = c
-                r = c
-            r[xs[-1]] = self.d["_"+"_".join(xs)]
-        print(root)
-        return root
+    def __contains__(self, name):
+        return name in self.children
 
-
-class RXWrapper(object):
-    def __init__(self, patw): 
-        self.patw = patw
-        self.rx = re.compile(patw.make(''))
-
-    def match(self, txt):
-        mow = MOWrapper(self, txt)
-        if mow.mo is None:
-            return None
-        return mow
-
-    @property
-    def pattern(self):
-        return self.rx.pattern
+    def pprint(self, indent=None):
+        if indent is None:
+            indent = 0
+        print(' '*indent + self.name)
+        for c in self.children.values():
+            c.pprint(indent+4)
 
 
 class Base(object):
     def __init__(self, *fs):
         self.fs = fs
+
+    def visit(self, enter, leave):
+        enter(self)
+        for f in self.fs:
+            f.visit(enter, leave)
+        leave(self)
 
     def make(self, parent):
         return "(?:{}){}".format(
@@ -62,7 +45,27 @@ class Base(object):
                 self.d)
 
     def compile(self):
-        return RXWrapper(self)
+        return re.compile(self.make(''))
+
+    def make_ast(self):
+        root = Node('')
+
+        stack = [root]
+        def enter(rnode):
+            if isinstance(rnode, named):
+                top = stack[-1]
+                top.make_child(rnode.name)
+                stack.append(top[rnode.name])
+
+        def leave(rnode):
+            if isinstance(rnode, named):
+                assert stack[-1].name == rnode.name
+                stack.pop(-1)
+
+        self.visit(enter, leave)
+
+        return root
+
 
 
 class Or(Base):
@@ -118,4 +121,20 @@ class counted(named):
         count = self._counted.get(p, 0)
         self._counted[p] = count + 1
         return r"(?P<{0}{1}>{2}{3})".format(p, count, self.pat, Cat(*self.fs).make(p))
+
+
+if __name__ == '__main__':
+    ws = unnamed(" ")
+    class may_be(Base):
+        def make(self, parent):
+            return Option(OneOrMore(ws), Option(*(self.fs))).make(parent)
+    x = named('a', 'a',
+            may_be(named("foo", "foo",
+                may_be(named("bar", "bar",
+                    may_be(named("baz", "baz")))))),
+            unnamed("$"))
+    t = x.make_ast()
+    t.pprint()
+
+
 
