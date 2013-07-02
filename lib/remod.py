@@ -3,18 +3,6 @@
 
 import re
 
-class Proxy(object):
-    def __init__(self, mow):
-        self.mow = mow
-        self.path = ""
-
-    def __getitem__(self, k):
-        p = self.path + "_" + k
-        if p in self.mow.d:
-           return self.mow.d[p]
-        self.path = p
-        return self
-
 
 class MOWrapper(object):
     def __init__(self, rxw, txt): 
@@ -30,7 +18,22 @@ class MOWrapper(object):
         return self.mo.groupdict()
 
     def smart(self):
-        return Proxy(self)
+        xxs = [tuple([x for x in k.split("_") if x]) for k in self.d.keys()]
+        xxs.sort(key=lambda xs:len(xs))
+        print(xxs)
+
+        root = {}
+        for xs in xxs:
+            r = root
+            for x in xs:
+                c = r.get(x, None)
+                if c is None:
+                    c = {}
+                r[x] = c
+                r = c
+            r[xs[-1]] = self.d["_"+"_".join(xs)]
+        print(root)
+        return root
 
 
 class RXWrapper(object):
