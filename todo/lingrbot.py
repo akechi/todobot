@@ -152,7 +152,7 @@ class ToDoBot(object):
         if "too_many_nickname" in kw:
             spool.write("Too many nicknames!")
             return spool
-        description += ' (by {}) '.format(who) #event['message']['speaker_id']
+        description += ' (by {})'.format(who) #event['message']['speaker_id']
         t = datetime.now()
         td = ToDo.add(username=nickname, description=description, created_at=t, status=0)
         spool.add(td)
