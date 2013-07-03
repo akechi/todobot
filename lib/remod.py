@@ -11,9 +11,14 @@ class Node(object):
         self.parent = parent
 
     def make_child(self, name):
-        assert name not in self.children
         c = Node(name, self)
-        self.children[name] = c
+        if name in self.children:
+            xs = self.children[name]
+            xs.append(c)
+            self.children[name] = xs
+        else:
+            self.children[name] = [c]
+        return c
 
     def __getitem__(self, name):
         return self.children[name]
@@ -25,8 +30,9 @@ class Node(object):
         if indent is None:
             indent = 0
         print(' '*indent + self.name)
-        for c in self.children.values():
-            c.pprint(indent+4)
+        for xs in self.children.values():
+            for x in xs:
+                x.pprint(indent+4)
 
 
 class Base(object):
@@ -54,8 +60,8 @@ class Base(object):
         def enter(rnode):
             if isinstance(rnode, named):
                 top = stack[-1]
-                top.make_child(rnode.name)
-                stack.append(top[rnode.name])
+                c = top.make_child(rnode.name)
+                stack.append(c)
 
         def leave(rnode):
             if isinstance(rnode, named):
@@ -136,5 +142,23 @@ if __name__ == '__main__':
     t = x.make_ast()
     t.pprint()
 
+    description = named("description", ".+")
+    nicknames = counted("nicknames", "[a-zA-Z@][a-zA-Z0-9_]*")
+    nickname = named("nickname", "[a-zA-Z@][a-zA-Z0-9_]*")
+    comma = unnamed(",")
+
+    x = Or(named("add", "add", may_be(description)),
+            named("addto", "addto", 
+                may_be(
+                    Option(nicknames, comma),
+                    Option(nicknames, comma),
+                    Option(nicknames, comma),
+                    Option(nicknames, comma),
+                    ZeroOrMore(named("too_many", "", nickname, comma)), 
+                    Option(nickname, unnamed("(?!,)"))),
+                may_be(description)),
+            unnamed("$"))
+    t = x.make_ast()
+    t.pprint()
 
 
