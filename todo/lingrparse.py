@@ -123,6 +123,14 @@ def parse(text):
     return d
 
 if __name__ == '__main__':
-    print(r.pattern)
-    print("enjoy reading regexp!")
+    import sys
+    if sys.argv[1] == 'pattern':
+        print(r.pattern)
+        print("enjoy reading regexp!")
+    elif sys.argv[1] == 'ast':
+        t = builder.make_ast()
+        t.pprint()
+
+
+
 
