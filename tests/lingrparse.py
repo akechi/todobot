@@ -4,7 +4,7 @@
 import unittest
 import json
 
-from todo.lingrparse import parse
+from todo.lingrparse import parse, builder
 from mocks import LingrUser
 
 
@@ -393,6 +393,7 @@ class ParseTestCase(unittest.TestCase):
         self.assertIn('_hashtodo', found)
         self.assertIn('_listof', found)
         self.assertIn('_listof_nickname', found)
+        self.assertIn('_listof_range', found)
         self.assertIn('_listof_range_both', found)
         self.assertIn('_listof_range_both_start', found)
         self.assertIn('_listof_range_both_end', found)
@@ -412,6 +413,22 @@ class ParseTestCase(unittest.TestCase):
         self.assertHas(found, '_done_task_ids3', '04')
 
 
+class AstNodeTestCase(unittest.TestCase):
+    def setUp(self):
+        self.ast = builder.make_ast()
+
+    def test_xxx(self):
+        found = parse("#todo listof raa0121 3-12")
+        self.assertEqual(set([
+            '_listof',
+            '_listof_nickname',
+            '_listof_range',
+            '_listof_range_both',
+            '_listof_range_both_start',
+            '_listof_range_both_end',
+            '_hashtodo']),
+            self.ast.validate(found))
+
+
 if __name__ == '__main__':
     unittest.main()
-

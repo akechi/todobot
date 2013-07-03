@@ -26,13 +26,32 @@ class Node(object):
     def __contains__(self, name):
         return name in self.children
 
+    def __iter__(self):
+        for xs in self.children.values():
+            for x in xs:
+                yield x
+
     def pprint(self, indent=None):
         if indent is None:
             indent = 0
         print(' '*indent + self.name)
-        for xs in self.children.values():
-            for x in xs:
-                x.pprint(indent+4)
+        for c in self:
+            c.pprint(indent+4)
+
+    def path(self):
+        if self.parent:
+            return self.parent.path() + (self.name, )
+        else:
+            return ()
+
+    def validate(self, d):
+        seen = set()
+        for c in self:
+            p = '_' + '_'.join(c.path())
+            if p in d:
+                seen.add(p)
+                seen |= c.validate({k: v for k, v in d.items() if k != p})
+        return seen
 
 
 class Base(object):
