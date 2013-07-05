@@ -52,12 +52,12 @@ class ReastTestCase(unittest.TestCase):
                 unnamed("$"))
         t = x.make_ast()
         self.assertIsNotNone(t["a"])
-        self.assertIn("foo", t["a"])
-        self.assertIsNotNone(t["a"]["foo"])
-        self.assertIn("bar", t["a"])
-        self.assertIsNotNone(t["a"]["bar"])
-        self.assertIn("baz", t["a"])
-        self.assertIsNotNone(t["a"]["baz"])
+        self.assertIn("foo", t["a"][0])
+        self.assertIsNotNone(t["a"][0]["foo"][0])
+        self.assertIn("bar", t["a"][0])
+        self.assertIsNotNone(t["a"][0]["bar"][0])
+        self.assertIn("baz", t["a"][0])
+        self.assertIsNotNone(t["a"][0]["baz"][0])
 
     def test_smart_deep_nesting(self):
         x = named('a', 'a',
@@ -66,10 +66,10 @@ class ReastTestCase(unittest.TestCase):
                         may_be(named("baz", "baz")))))),
                 unnamed("$"))
         t = x.make_ast()
-        self.assertIn("foo", t["a"])
-        self.assertIn("bar", t["a"]["foo"])
-        self.assertIn("baz", t["a"]["foo"]["bar"])
-        self.assertIsNotNone(t["a"]["foo"]["bar"]["baz"])
+        self.assertIn("foo", t["a"][0])
+        self.assertIn("bar", t["a"][0]["foo"][0])
+        self.assertIn("baz", t["a"][0]["foo"][0]["bar"][0])
+        self.assertIsNotNone(t["a"][0]["foo"][0]["bar"][0]["baz"])
 
 
 
