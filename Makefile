@@ -1,5 +1,7 @@
 
 
+test-reast:
+	python3.3 -m tests.reast
 
 test-lingrbot:
 	python3.3 -m tests.lingrbot
