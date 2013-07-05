@@ -2,6 +2,7 @@
 # -*- coding: utf-8 -*-
 
 import inspect
+from inspect import Parameter
 from functools import partial
 
 
@@ -11,6 +12,9 @@ fail:
     missing <name>: first arg named <name> is needed to call bound
     TooManyFound <name>: key <name> in d is not used in bound.
 
+limitations:
+    user MUST supply name.
+    cannot use positional only parameters
 '''
 
 
@@ -20,13 +24,15 @@ def findbind(f, d):
     missing = set([])
     toomany = set(d.keys())
 
-    for k in sig.parameters:
-        if k:
-            if k in d:
-                toomany.remove(k)
-            else:
-                missing.add(k)
-
+    for p in sig.parameters.values():
+        assert p.kind is not Parameter.POSITIONAL_ONLY
+        k = p.name
+        if k in d:
+            toomany.remove(k)
+        if k not in d and p.default is Parameter.empty:
+            ''' if f has default,
+            we donot need to supply'''
+            missing.add(k)
 
     if not missing and not toomany:
         bound = partial(f, **d)
