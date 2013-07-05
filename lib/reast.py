@@ -46,11 +46,16 @@ class Node(object):
 
     def validate(self, d):
         seen = set()
-        for c in self:
-            p = '_' + '_'.join(c.path())
-            if p in d:
-                seen.add(p)
-                seen |= c.validate({k: v for k, v in d.items() if k != p})
+        for xs in self.children.values():
+            for i, c in enumerate(xs):
+                if len(xs) == 1:
+                    p = '_' + '_'.join(c.path())
+                else:
+                    p = '_' + '_'.join(c.path()) + '{}'.format(i)
+                print(p)
+                if p in d and d[p] is not None:
+                    seen.add(p)
+                    seen |= c.validate({k: v for k, v in d.items() if k != p})
         return seen
 
 
@@ -166,7 +171,7 @@ if __name__ == '__main__':
     nickname = named("nickname", "[a-zA-Z@][a-zA-Z0-9_]*")
     comma = unnamed(",")
 
-    x = Or(named("add", "add", may_be(description)),
+    x = Cat(Or(named("add", "add", may_be(description)),
             named("addto", "addto", 
                 may_be(
                     Option(nicknames, comma),
@@ -175,9 +180,17 @@ if __name__ == '__main__':
                     Option(nicknames, comma),
                     ZeroOrMore(named("too_many", "", nickname, comma)), 
                     Option(nickname, unnamed("(?!,)"))),
-                may_be(description)),
-            unnamed("$"))
+                may_be(description))
+            ), unnamed("$"))
     t = x.make_ast()
     t.pprint()
+    r = x.compile()
+    m = r.match("add hogehoge")
+    d = m.groupdict()
+    print(t.validate(d))
 
+    m = r.match("addto raa0121,thinca hogehoge")
+    d = m.groupdict()
+    print(d)
+    print(t.validate(d))
 
