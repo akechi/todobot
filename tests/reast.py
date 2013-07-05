@@ -4,7 +4,7 @@
 import unittest
 import re
 
-from lib.remod import *
+from lib.reast import *
 
 ws = unnamed(" ")
 class may_be(Base):

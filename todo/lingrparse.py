@@ -1,7 +1,7 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
-from lib.remod import *
+from lib.reast import *
 
 import re
 
