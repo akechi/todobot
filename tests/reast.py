@@ -12,7 +12,7 @@ class may_be(Base):
         return Option(OneOrMore(ws), Option(*(self.fs))).make(parent)
 
 
-class RemodTestCase(unittest.TestCase):
+class ReastTestCase(unittest.TestCase):
     def test_make(self):
         x = named('a', 'a')
         self.assertEqual("(?P<_a>a(?:))", x.make(''))
