@@ -90,6 +90,9 @@ class Node(object):
                     assert x is None
                     x = d[k]
                 result[name] = x
+        for k, v in list(result.items()):
+            if v is None:
+                del result[k]
         return result
 
 

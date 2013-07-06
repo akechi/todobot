@@ -258,9 +258,9 @@ class ToDoBot(object):
             spool.add(found)
         return spool
 
-    def handle_done(self, spool, who, task_ids=None):
+    def handle_done(self, spool, who, task_ids):
         """#todo done [id] [id] [id] [id] [id]"""
-        for task_id in task_ids or []:
+        for task_id in task_ids:
             if task_id is None:
                 spool.write("そもそも予定じゃない")
                 continue
@@ -293,9 +293,9 @@ class ToDoBot(object):
             spool.write("それはお前の予定じゃない")
         return spool
 
-    def handle_del(self, spool, who, task_ids=None):
+    def handle_del(self, spool, who, task_ids):
         """#todo del [id] [id] [id] [id] [id]"""
-        for task_id in task_ids or []:
+        for task_id in task_ids:
             if task_id is None:
                 spool.write("そもそも予定じゃない")
                 continue

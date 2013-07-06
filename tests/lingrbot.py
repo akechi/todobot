@@ -249,6 +249,12 @@ class ToDoBotDBTestCase(unittest.TestCase):
         self.assertEqual(6, len([x for x in xs if x.startswith('[_]')]))
         self.assertEqual(2, len([x for x in xs if x.startswith('[X]')]))
 
+    def test_done_bad(self):
+        req = self.raa0121.say('#todo done ')
+        event = json.loads(req)['events'][0]
+        s = self.bot.on_json(event)
+        self.assertTrue(s.text.startswith('引数がたりない'))
+
     def test_done(self):
         req = self.raa0121.say('#todo done 1')
         event = json.loads(req)['events'][0]
