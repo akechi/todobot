@@ -104,13 +104,15 @@ class ToDoBotDBTestCase(unittest.TestCase):
         self.engine.dispose()
 
 
-    def test_bad_command(self):
-        req = self.raa0121.say('#todo foobar')
+    def test_not_implemented(self):
+        req = self.raa0121.say('#todo notimplemented')
         event = json.loads(req)['events'][0]
         s = self.bot.on_json(event)
 
         xs = flatten([x.splitlines() for x in s.render_for_lingr(500)])
-        self.assertIn('No such command.', xs)
+
+        self.assertTrue(xs)
+        self.assertEqual('そのcommand実装されてない. "#todo notimplemented"', xs[0])
 
     def test_help(self):
         req = self.raa0121.say('#todo help')

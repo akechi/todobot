@@ -11,10 +11,12 @@ import urllib.request, urllib.parse, urllib.error
 import urllib.request, urllib.error, urllib.parse
 import hashlib
 from datetime import datetime
+import functools
 
+from lib.reast import findbind
 from todo.models import ToDo
 from todo import models
-from todo.lingrparse import parse
+from todo.lingrparse import rx, ast 
 
 
 
@@ -85,21 +87,33 @@ class ToDoBot(object):
         who = event['message']['speaker_id']
 
         spool = Spool(room)
-        d = parse(text)
-        if d is None:
+        m = rx.match(text)
+        if m is None:
             return spool
+        d = dict([(k, v) for k, v in m.groupdict().items() if v is not None])
         if len(d) == 1:
-            spool.write('Please "#todo help"')
+            spool.write('何をしたいのかわからない。"#todo help" してみて.')
             return spool
-        del(d['_hashtodo'])
 
         method, name = self.find_method(d)
 
         if method is None:
-            spool.write('No such command.')
+            spool.write('そのcommand実装されてない. "{0}"'.format(text))
             return spool
 
-        return method(spool, who, **self.strip(d, name))
+        method = functools.partial(method, who=who, spool=spool)
+
+        to_bind = ast.bindable(d, ('hashtodo', name[1:]))
+        bound, missing, toomany = findbind(method, to_bind)
+
+        if missing:
+            spool.write('引数がたりない {0}'.format(missing))
+        if toomany:
+            spool.write('引数が多すぎる. {0}'.format(toomany))
+        if bound is None:
+            return spool
+
+        return bound()
 
     def strip(self, d, name):
         return dict([(k[len(name)+1:], v) for k, v in d.items()
@@ -143,23 +157,20 @@ class ToDoBot(object):
         spool.add(td)
         return spool
 
-    def handle_addto(self, spool, who, nickname, description, **kw):
+    def handle_addto(self, spool, who, nickname, description, nicknames=None):
         """#todo addto [nickname] [description]"""
         '''
             u1_nickname=None, ...
             too_many_nickname=None
         '''
-        if "too_many_nickname" in kw:
-            spool.write("Too many nicknames!")
-            return spool
+
         description += ' (by {})'.format(who) #event['message']['speaker_id']
         t = datetime.now()
         td = ToDo.add(username=nickname, description=description, created_at=t, status=0)
         spool.add(td)
-        for k, n in kw.items():
-            if k[:-1].endswith('nicknames'):
-                td = ToDo.add(username=n, description=description, created_at=t, status=0)
-                spool.add(td)
+        for n in nicknames or []:
+            td = ToDo.add(username=n, description=description, created_at=t, status=0)
+            spool.add(td)
         return spool
 
     def handle_list_all(self, spool, who):
@@ -176,17 +187,20 @@ class ToDoBot(object):
         spool.write('nothing found for {}'.format(who))
         return spool
 
-    def handle_list(self, spool, who, **kw):
+    def handle_list(self, spool, who, start=None, end=None, keyword=None):
         """#todo list [start]-[end] [keyword]"""
+        '''
         start = kw.get('range_start',
                 kw.get('range_both_start', 0))
         end = kw.get('range_end',
                 kw.get('range_both_end', None))
+        '''
+        if start is None:
+            start = 0
         if end is None:
-           limit = -1
+            limit = -1
         else:
-           limit = int(end) - int(start)
-        keyword = kw.get('keyword', None)
+            limit = int(end) - int(start)
 
         if keyword is not None:
             #FIXME danger!
@@ -218,9 +232,9 @@ class ToDoBot(object):
         spool.write('nothing found for {}'.format(nickname))
         return spool
 
-    def handle_listof(self, spool, who, nickname, **kw):
+    def handle_listof(self, spool, who, nickname, start=None, end=None, keyword=None):
         """#todo listof [nickname] [start-end] [keyword]"""
-        return self.handle_list(spool, nickname, **kw)
+        return self.handle_list(spool, nickname, start, end, keyword)
 
     def handle_list_everything(self, spool, who):
         """#todo list-everything"""
@@ -244,10 +258,9 @@ class ToDoBot(object):
             spool.add(found)
         return spool
 
-    def handle_done(self, spool, who, **kw):
+    def handle_done(self, spool, who, task_ids=None):
         """#todo done [id] [id] [id] [id] [id]"""
-        xs = [v for k, v in kw.items() if k.startswith("task_ids")]
-        for task_id in xs:
+        for task_id in task_ids or []:
             if task_id is None:
                 spool.write("そもそも予定じゃない")
                 continue
@@ -280,10 +293,9 @@ class ToDoBot(object):
             spool.write("それはお前の予定じゃない")
         return spool
 
-    def handle_del(self, spool, who, **kw):
+    def handle_del(self, spool, who, task_ids=None):
         """#todo del [id] [id] [id] [id] [id]"""
-        xs = [v for k, v in kw.items() if k.startswith("task_ids")]
-        for task_id in xs:
+        for task_id in task_ids or []:
             if task_id is None:
                 spool.write("そもそも予定じゃない")
                 continue

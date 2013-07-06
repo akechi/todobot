@@ -32,12 +32,8 @@ task_ids = counted("task_ids", "\d+")
 end = named("end", "\d+")
 start = named("start", "\d+")
 
-rangespec = named("range", "", 
-        Or(
-            Cat(expect_nohyph, start, hyph),
-            Cat(Option(hyph), end, expect_nohyph),
-            named('both', '', start, hyph, end),
-            ))
+rangespec = Cat(Option(expect_nohyph, start, hyph), Option(hyph), Option(end, expect_nohyph))
+
 
 keyword = named("keyword", "\w+")
 
@@ -45,6 +41,7 @@ keyword = named("keyword", "\w+")
 builder = Cat(
         named("hashtodo", "#todo"),
         may_be(Or(
+            named("notimplemented", "notimplemented", ignore_rest),
             named("about", "about", ignore_rest),
             named("add", "add", may_be(description)),
             named("addto", "addto", 
@@ -111,12 +108,14 @@ builder = Cat(
                     may_be(nickname),
                     ignore_rest),
             )),
+            ignore_rest,
   unnamed('$'))
 
-r = builder.compile()
+ast = builder.make_ast()
+rx = builder.compile()
 
 def parse(text):
-    m = r.match(text)
+    m = rx.match(text)
     if m is None:
         return None
     d = dict([(k, v) for k, v in m.groupdict().items() if v is not None])
