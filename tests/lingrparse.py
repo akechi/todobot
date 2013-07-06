@@ -427,7 +427,7 @@ class AstNodeTestCase(unittest.TestCase):
             '_listof_range_both_start',
             '_listof_range_both_end',
             '_hashtodo']),
-            self.ast.validate(found))
+            set(self.ast.associate(found).keys()))
 
 
 if __name__ == '__main__':
