@@ -104,16 +104,16 @@ class ToDoBot(object):
         method = functools.partial(method, who=who, spool=spool)
 
         to_bind = ast.bindable(d, ('hashtodo', name[1:]))
-        bound, missing, toomany = findbind(method, to_bind)
+        missing, toomany = findbind(method, to_bind)
 
         if missing:
             spool.write('引数がたりない {0}'.format(missing))
+            return spool
         if toomany:
             spool.write('引数が多すぎる. {0}'.format(toomany))
-        if bound is None:
             return spool
 
-        return bound()
+        return method(**to_bind) 
 
     def strip(self, d, name):
         return dict([(k[len(name)+1:], v) for k, v in d.items()
