@@ -73,7 +73,7 @@ class Node(object):
         assert pos != -1
         return int(path[pos+1:])
 
-    def bindable(self, d, *nots):
+    def bindable(self, d, nots):
         assoc = self.associate(d)
         result = {}
         for k, v in assoc.items():
