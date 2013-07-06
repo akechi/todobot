@@ -2,6 +2,9 @@
 # -*- coding: utf-8 -*-
 
 import re
+import inspect
+from inspect import Parameter
+from functools import partial
 
 
 class Node(object):
@@ -157,36 +160,37 @@ class counted(named):
         return r"(?P<{0}{1}>{2}{3})".format(p, count, self.pat, Cat(*self.fs).make(p))
 
 
+def findbind(f, d):
+    '''
+    success: able to call bound
+    fail:
+        missing <name>: first arg named <name> is needed to call bound
+        TooManyFound <name>: key <name> in d is not used in bound.
+
+    limitations:
+        user MUST supply name.
+        cannot use positional only parameters
+    '''
+    sig = inspect.signature(f)
+    bound = None
+    missing = set([])
+    toomany = set(d.keys())
+
+    for p in sig.parameters.values():
+        assert p.kind is not Parameter.POSITIONAL_ONLY
+        k = p.name
+        if k in d:
+            toomany.remove(k)
+        if k not in d and p.default is Parameter.empty:
+            ''' if f has default,
+            we donot need to supply'''
+            missing.add(k)
+
+    if not missing and not toomany:
+        bound = partial(f, **d)
+
+    return bound, missing, toomany,
+
+
 if __name__ == '__main__':
-    ws = unnamed(" ")
-    class may_be(Base):
-        def make(self, parent):
-            return Option(OneOrMore(ws), Option(*(self.fs))).make(parent)
-
-    description = named("description", ".+")
-    nicknames = counted("nicknames", "[a-zA-Z@][a-zA-Z0-9_]*")
-    nickname = named("nickname", "[a-zA-Z@][a-zA-Z0-9_]*")
-    comma = unnamed(",")
-
-    x = Cat(Or(named("add", "add", may_be(description)),
-            named("addto", "addto", 
-                may_be(
-                    Option(nicknames, comma),
-                    Option(nicknames, comma),
-                    Option(nicknames, comma),
-                    Option(nicknames, comma),
-                    ZeroOrMore(named("too_many", "", nickname, comma)), 
-                    Option(nickname, unnamed("(?!,)"))),
-                may_be(description))
-            ), unnamed("$"))
-    t = x.make_ast()
-    t.pprint()
-    r = x.compile()
-
-    m = r.match("addto raa0121,deris0126,thinca hogehoge")
-    d = m.groupdict()
-    print(d)
-    assoc = t.associate(d)
-    print(assoc)
-    for p, node in assoc.items():
-        print(node.name, p, d[p])
+    pass
