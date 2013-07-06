@@ -73,7 +73,61 @@ class ReastTestCase(unittest.TestCase):
 
 
 
+class ReastComplexTestCase(unittest.TestCase):
+    def setUp(self):
+        description = named("description", ".+")
+        nicknames = counted("nicknames", "[a-zA-Z@][a-zA-Z0-9_]*")
+        nickname = named("nickname", "[a-zA-Z@][a-zA-Z0-9_]*")
+        comma = unnamed(",")
+
+        x = Cat(Or(named("add", "add", may_be(description)),
+                named("addto", "addto", 
+                    may_be(
+                        Option(nicknames, comma),
+                        Option(nicknames, comma),
+                        Option(nicknames, comma),
+                        Option(nicknames, comma),
+                        ZeroOrMore(named("too_many", "", nickname, comma)), 
+                        Option(nickname, unnamed("(?!,)"))),
+                    may_be(description))
+                ), unnamed("$"))
+        t = x.make_ast()
+        r = x.compile()
+        self.x = x
+        self.t = t
+        self.r = r
+
+    def test_add_arg(self):
+        m = self.r.match("add hogehoge")
+        d = m.groupdict()
+        assoc = self.t.associate(d)
+
+    def test_addto_args(self):
+        m = self.r.match("addto raa0121,deris0126,thinca hogehoge")
+        d = m.groupdict()
+        assoc = self.t.associate(d)
+
+        self.assertIn('_addto', assoc)
+        self.assertEqual('addto', assoc['_addto'].name)
+
+        self.assertIn('_addto_nickname', assoc)
+        self.assertEqual('nickname', assoc['_addto_nickname'].name)
+        self.assertEqual('thinca', d['_addto_nickname'])
+
+        self.assertIn('_addto_nicknames0', assoc)
+        self.assertIn('nicknames', assoc['_addto_nicknames0'].name)
+        self.assertIn('raa0121', d['_addto_nicknames0'])
+
+        self.assertIn('_addto_nicknames1', assoc)
+        self.assertIn('nicknames', assoc['_addto_nicknames1'].name)
+        self.assertIn('deris0126', d['_addto_nicknames1'])
+
+        self.assertIn('_addto_description', assoc)
+        self.assertEqual('description', assoc['_addto_description'].name)
+        self.assertEqual('hogehoge', d['_addto_description'])
+
+
+
 
 if __name__ == '__main__':
     unittest.main()
-

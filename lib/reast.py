@@ -44,19 +44,22 @@ class Node(object):
         else:
             return ()
 
-    def validate(self, d):
-        seen = set()
+    def associate(self, d):
+        '''
+            associate regular expression match object groupdict() and ast.
+        '''
+        seen = dict()
         for xs in self.children.values():
             for i, c in enumerate(xs):
                 if len(xs) == 1:
                     p = '_' + '_'.join(c.path())
                 else:
                     p = '_' + '_'.join(c.path()) + '{}'.format(i)
-                print(p)
                 if p in d and d[p] is not None:
-                    seen.add(p)
-                    seen |= c.validate({k: v for k, v in d.items() if k != p})
+                    seen[p] = c
+                    seen.update(c.associate(d))#{k: v for k, v in d.items() if k != p}))
         return seen
+
 
 
 class Base(object):
@@ -144,8 +147,9 @@ class named(unnamed):
 
 
 class counted(named):
-    #def counted(name, pat, *fs):
-    _counted = {}
+    def __init__(self, name, pat, *fs):
+        named.__init__(self, name, pat, *fs)
+        self._counted = {}
     def make(self, parent):
         p = self.make_path(parent)
         count = self._counted.get(p, 0)
@@ -158,13 +162,6 @@ if __name__ == '__main__':
     class may_be(Base):
         def make(self, parent):
             return Option(OneOrMore(ws), Option(*(self.fs))).make(parent)
-    x = named('a', 'a',
-            may_be(named("foo", "foo",
-                may_be(named("bar", "bar",
-                    may_be(named("baz", "baz")))))),
-            unnamed("$"))
-    t = x.make_ast()
-    t.pprint()
 
     description = named("description", ".+")
     nicknames = counted("nicknames", "[a-zA-Z@][a-zA-Z0-9_]*")
@@ -185,12 +182,11 @@ if __name__ == '__main__':
     t = x.make_ast()
     t.pprint()
     r = x.compile()
-    m = r.match("add hogehoge")
-    d = m.groupdict()
-    print(t.validate(d))
 
-    m = r.match("addto raa0121,thinca hogehoge")
+    m = r.match("addto raa0121,deris0126,thinca hogehoge")
     d = m.groupdict()
     print(d)
-    print(t.validate(d))
-
+    assoc = t.associate(d)
+    print(assoc)
+    for p, node in assoc.items():
+        print(node.name, p, d[p])
