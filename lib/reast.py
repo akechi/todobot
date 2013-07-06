@@ -63,6 +63,19 @@ class Node(object):
                     seen.update(c.associate(d))#{k: v for k, v in d.items() if k != p}))
         return seen
 
+    def bindable(self, d, *nots):
+        assoc = self.associate(d)
+        result = {}
+        for k, v in assoc.items():
+            name = v.name
+            if name not in nots:
+                x = result.get(name, None)
+                if x is None:
+                    x = []
+                x.append(d[k])
+                result[name] = x
+        return result
+
 
 
 class Base(object):
@@ -158,6 +171,8 @@ class counted(named):
         count = self._counted.get(p, 0)
         self._counted[p] = count + 1
         return r"(?P<{0}{1}>{2}{3})".format(p, count, self.pat, Cat(*self.fs).make(p))
+
+
 
 
 def findbind(f, d):

@@ -183,5 +183,39 @@ class FindBindTestCase(unittest.TestCase):
         self.assertNotIn('a', toomany)
 
 
+
+class BindComplexTestCase(unittest.TestCase):
+    def setUp(self):
+        description = named("description", ".+")
+        nicknames = counted("nicknames", "[a-zA-Z@][a-zA-Z0-9_]*")
+        nickname = named("nickname", "[a-zA-Z@][a-zA-Z0-9_]*")
+        comma = unnamed(",")
+
+        x = Cat(Or(named("add", "add", may_be(description)),
+                named("addto", "addto", 
+                    may_be(
+                        Option(nicknames, comma),
+                        Option(nicknames, comma),
+                        Option(nicknames, comma),
+                        Option(nicknames, comma),
+                        ZeroOrMore(named("too_many", "", nickname, comma)), 
+                        Option(nickname, unnamed("(?!,)"))),
+                    may_be(description))
+                ), unnamed("$"))
+        t = x.make_ast()
+        r = x.compile()
+        self.x = x
+        self.t = t
+        self.r = r
+        self.f = lambda nickname, nicknames, description : {}.format(nickname, nicknames, description)
+    
+
+    def test_(self):
+        m = self.r.match("addto raa0121,deris0126,thinca hogehoge")
+        b = self.t.bindable(m.groupdict(), 'addto')
+        bound, missing, too_many = findbind(self.f, b)
+        self.assertIsNotNone(bound)
+
+
 if __name__ == '__main__':
     unittest.main()
