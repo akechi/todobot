@@ -194,9 +194,6 @@ def bindable(assoc, d, nots):
         else:
             x = d[k]
         result[v.name] = x
-    for k, v in list(result.items()):
-        if v is None:
-            del result[k]
     return result
 
 
