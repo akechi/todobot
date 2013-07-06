@@ -212,7 +212,9 @@ class BindComplexTestCase(unittest.TestCase):
 
     def test_(self):
         m = self.r.match("addto raa0121,deris0126,thinca hogehoge")
-        b = self.t.bindable(m.groupdict(), ('addto',))
+        d = m.groupdict()
+        assoc = self.t.associate(d)
+        b = bindable(assoc, d, ('addto',))
         missing, too_many = findbind(self.f, b)
         self.assertFalse(missing)
         self.assertFalse(too_many)

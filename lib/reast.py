@@ -13,6 +13,7 @@ class Node(object):
         self.name = name
         self.children = {}
         self.parent = parent
+        self.named_matches = []
 
     def make_child(self, name):
         c = Node(name, self)
@@ -58,43 +59,31 @@ class Node(object):
                 p = c.regex_path_string(i)
                 if p in d and d[p] is not None:
                     seen[p] = c
+                    c.named_matches.append(p)
                     seen.update(c.associate(d))#{k: v for k, v in d.items() if k != p}))
         return seen
 
     def regex_path_string(self, i):
-        if self.name.endswith('s'):
+        if self.multimatch:
             return '_' + '_'.join(self.path()) + '{}'.format(i)
         else:
             return '_' + '_'.join(self.path())
 
-    def nsiblings(self):
-        if self.parent is None:
-            return 0
-        return len(self.parent[self.name])
-
-    def guess(self, path):
+    def guess_pos(self, path):
         pos = path.rfind('s')
         assert pos != -1
         return int(path[pos+1:])
 
-    def bindable(self, d, nots):
-        assoc = self.associate(d)
-        result = {}
-        for k, v in filterfalse(lambda x : x[1].name in nots , assoc.items()):
-            if v.name.endswith('s'):
-                assert k.endswith(tuple('0123456789'))
-                x = result.get(v.name, None)
-                if x is None:
-                    x = [None for i in range(v.nsiblings())]
-                pos = self.guess(k)
-                x[pos] = d[k]
-            else:
-                x = d[k]
-            result[v.name] = x
-        for k, v in list(result.items()):
-            if v is None:
-                del result[k]
-        return result
+    @property
+    def n_lets(self):
+        if self.parent is None:
+            return []
+        return self.parent[self.name]
+
+    @property
+    def multimatch(self):
+        return len(self.n_lets) > 1
+
 
 
 
@@ -193,6 +182,22 @@ class counted(named):
         return r"(?P<{0}{1}>{2}{3})".format(p, count, self.pat, Cat(*self.fs).make(p))
 
 
+def bindable(assoc, d, nots):
+    result = {}
+    for k, v in filterfalse(lambda x : x[1].name in nots , assoc.items()):
+        if v.multimatch:
+            x = result.get(v.name, None)
+            if x is None:
+                x = [None for _ in enumerate(v.n_lets)]
+            pos = v.guess_pos(k)
+            x[pos] = d[k]
+        else:
+            x = d[k]
+        result[v.name] = x
+    for k, v in list(result.items()):
+        if v is None:
+            del result[k]
+    return result
 
 
 def findbind(f, d):

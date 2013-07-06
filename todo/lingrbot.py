@@ -13,7 +13,7 @@ import hashlib
 from datetime import datetime
 import functools
 
-from lib.reast import findbind
+from lib.reast import findbind, bindable
 from todo.models import ToDo
 from todo import models
 from todo.lingrparse import rx, ast 
@@ -103,7 +103,9 @@ class ToDoBot(object):
 
         method = functools.partial(method, who=who, spool=spool)
 
-        to_bind = ast.bindable(d, ('hashtodo', name[1:]))
+        assoc = ast.associate(d)
+
+        to_bind = bindable(assoc, d, ('hashtodo', name[1:]))
         missing, toomany = findbind(method, to_bind)
 
         if missing:
