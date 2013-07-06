@@ -86,7 +86,6 @@ class Node(object):
 
 
 
-
 class Base(object):
     def __init__(self, *fs):
         self.fs = fs
@@ -152,6 +151,7 @@ class unnamed(Base):
     def __init__(self, pat, *fs):
         Base.__init__(self, *fs)
         self.pat = pat
+
     def make(self, parent):
         return "(?:{}".format(self.pat)+ Cat(*(self.fs)).make(parent) + ")"
 
