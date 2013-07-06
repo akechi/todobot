@@ -137,28 +137,26 @@ class FindBindTestCase(unittest.TestCase):
         def foo():
             return 1
         d = {}
-        bound, notfound, toomany = findbind(foo, d)
-        self.assertIsInstance(bound, partial)
-        self.assertEqual(1, bound())
+        notfound, toomany = findbind(foo, d)
         self.assertEmpty(notfound)
         self.assertEmpty(toomany)
+        self.assertEqual(1, foo(**d))
+
 
     def test_one(self):
         def foo(a):
             return a
         d = {"a":10}
-        bound, notfound, toomany = findbind(foo, d)
-        self.assertIsInstance(bound, partial)
-        self.assertEqual(10, bound())
+        notfound, toomany = findbind(foo, d)
         self.assertEmpty(notfound)
         self.assertEmpty(toomany)
+        self.assertEqual(10, foo(**d))
 
     def test_one_not_found(self):
         def foo(a):
             return a
         d = {}
-        bound, notfound, toomany = findbind(foo, d)
-        self.assertIsNone(bound)
+        notfound, toomany = findbind(foo, d)
         self.assertIn('a', notfound)
         self.assertEmpty(toomany)
 
@@ -166,8 +164,7 @@ class FindBindTestCase(unittest.TestCase):
         def foo(a):
             return a
         d = dict(a=1, b=2)
-        bound, notfound, toomany = findbind(foo, d)
-        self.assertIsNone(bound)
+        notfound, toomany = findbind(foo, d)
         self.assertEmpty(notfound)
         self.assertIn('b', toomany)
 
@@ -175,8 +172,7 @@ class FindBindTestCase(unittest.TestCase):
         def foo(a):
             return a
         d = dict(b=2)
-        bound, notfound, toomany = findbind(foo, d)
-        self.assertIsNone(bound)
+        notfound, toomany = findbind(foo, d)
         self.assertIn('a', notfound)
         self.assertNotIn('b', notfound)
         self.assertIn('b', toomany)
@@ -217,9 +213,10 @@ class BindComplexTestCase(unittest.TestCase):
     def test_(self):
         m = self.r.match("addto raa0121,deris0126,thinca hogehoge")
         b = self.t.bindable(m.groupdict(), ('addto',))
-        bound, missing, too_many = findbind(self.f, b)
-        self.assertIsNotNone(bound)
-        self.assertEqual('thinca:raa0121:deris0126:hogehoge', bound())
+        missing, too_many = findbind(self.f, b)
+        self.assertFalse(missing)
+        self.assertFalse(too_many)
+        self.assertEqual('thinca:raa0121:deris0126:hogehoge', self.f(**b))
 
 
 if __name__ == '__main__':

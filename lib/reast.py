@@ -196,17 +196,16 @@ class counted(named):
 
 def findbind(f, d):
     '''
-    success: able to call bound
+    success: able to call f with **d
     fail:
-        missing <name>: first arg named <name> is needed to call bound
-        TooManyFound <name>: key <name> in d is not used in bound.
+        missing <name>: first arg named <name> is needed to call f 
+        TooManyFound <name>: key <name> in d is not used in f.
 
     limitations:
         user MUST supply name.
         cannot use positional only parameters
     '''
     sig = inspect.signature(f)
-    bound = None
     missing = set([])
     toomany = set(d.keys())
 
@@ -219,11 +218,7 @@ def findbind(f, d):
             ''' if f has default,
             we donot need to supply'''
             missing.add(k)
-
-    if not missing and not toomany:
-        bound = partial(f, **d)
-
-    return bound, missing, toomany,
+    return missing, toomany,
 
 
 if __name__ == '__main__':
