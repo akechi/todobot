@@ -207,7 +207,11 @@ class BindComplexTestCase(unittest.TestCase):
         self.x = x
         self.t = t
         self.r = r
-        self.f = lambda nickname, nicknames, description : {}.format(nickname, nicknames, description)
+
+        def foo(nickname, nicknames, description):
+            return "{0}:{1[0]}:{1[1]}:{2}".format(nickname, nicknames, description)
+
+        self.f = foo 
     
 
     def test_(self):
@@ -215,6 +219,7 @@ class BindComplexTestCase(unittest.TestCase):
         b = self.t.bindable(m.groupdict(), 'addto')
         bound, missing, too_many = findbind(self.f, b)
         self.assertIsNotNone(bound)
+        self.assertEqual('thinca:raa0121:deris0126:hogehoge', bound())
 
 
 if __name__ == '__main__':

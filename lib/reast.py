@@ -63,6 +63,16 @@ class Node(object):
                     seen.update(c.associate(d))#{k: v for k, v in d.items() if k != p}))
         return seen
 
+    def nsiblings(self):
+        if self.parent is None:
+            return 0
+        return len(self.parent[self.name])
+
+    def guess(self, path):
+        pos = path.rfind('s')
+        assert pos != -1
+        return int(path[pos+1:])
+
     def bindable(self, d, *nots):
         assoc = self.associate(d)
         result = {}
@@ -70,9 +80,15 @@ class Node(object):
             name = v.name
             if name not in nots:
                 x = result.get(name, None)
-                if x is None:
-                    x = []
-                x.append(d[k])
+                if name.endswith('s'):
+                    assert k.endswith(tuple('0123456789'))
+                    if x is None:
+                        x = [None for i in range(v.nsiblings())]
+                    pos = self.guess(k)
+                    x[pos] = d[k]
+                else:
+                    assert x is None
+                    x = d[k]
                 result[name] = x
         return result
 
