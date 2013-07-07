@@ -4,7 +4,7 @@
 import unittest
 import json
 
-from todo.lingrparse import parse, builder
+from todo.lingrparse import parse, builder, ast, cap
 from mocks import LingrUser
 
 
@@ -81,8 +81,12 @@ class ParseTestCase(unittest.TestCase):
         self.assertIn('_hashtodo', found)
         self.assertIn('_addto', found)
         self.assertIn('_addto_nickname', found)
-        self.assertHas(found, '_addto_nicknames0', 'alice')
-        self.assertHas(found, '_addto_nicknames1', 'bob')
+
+        assoc = cap.associate(found)
+        xs = set([found[x.regexp_name] for x in ast.find(('addto','nicknames'))
+                 if x.regexp_name in assoc])
+        self.assertEqual(set(['alice', 'bob']), xs)
+
         self.assertHas(found, '_addto_nickname', 'charlie')
         self.assertIn('_addto_description', found)
         self.assertHas(found, '_addto_description', 'bar')
@@ -93,8 +97,13 @@ class ParseTestCase(unittest.TestCase):
         self.assertIn('_hashtodo', found)
         self.assertIn('_addto', found)
         self.assertIn('_addto_nickname', found)
-        self.assertHas(found, '_addto_nicknames0', 'one')
-        self.assertHas(found, '_addto_nicknames1', 'two')
+        self.assertHas(found, '_addto_nickname', 'seven')
+
+        assoc = cap.associate(found)
+        xs = set([found[x.regexp_name] for x in ast.find(('addto','nicknames'))
+                 if x.regexp_name in assoc])
+        self.assertEqual(set(['one', 'two', 'three', 'four']), xs)
+
         self.assertHas(found, '_addto_too_many_nickname', 'six')
         self.assertIn('_addto_description', found)
         self.assertHas(found, '_addto_description', 'bar')
@@ -377,12 +386,12 @@ class ParseTestCase(unittest.TestCase):
         self.assertIsNotNone(found)
         self.assertIn('_hashtodo', found)
         self.assertIn('_done', found)
-        self.assertIn('_done_task_ids0', found)
-        self.assertHas(found, '_done_task_ids0', '0')
-        self.assertHas(found, '_done_task_ids1', '1')
-        self.assertHas(found, '_done_task_ids2', '13')
-        self.assertHas(found, '_done_task_ids3', '04')
 
+        assoc = cap.associate(found)
+        xs = set([found[x.regexp_name] for x in ast.find(('done','task_ids'))
+                 if x.regexp_name in assoc])
+        self.assertEqual(set(['0', '1', '13', '04']), xs)
+        
 
 class AstNodeTestCase(unittest.TestCase):
     def setUp(self):

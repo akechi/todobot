@@ -129,19 +129,17 @@ class ReastComplexTestCase(unittest.TestCase):
         self.assertEqual('thinca', d['_addto_nickname'])
 
         ast = self.ast
-        found = ast.find(('addto', ))
-        self.assertTrue(found)
-        self.assertEqual(len(found), 1)
-        found = found.pop()
-        print(found.name, found.regexp_name)
 
-        self.assertIn('_addto_nicknames0', assoc)
-        self.assertIn('nicknames', assoc['_addto_nicknames0'].name)
-        self.assertIn('raa0121', d['_addto_nicknames0'])
+        xs = set([d[x.regexp_name] for x in ast.find(('addto',))
+                 if x.regexp_name in assoc])
+        self.assertEqual(set(['addto raa0121,deris0126,thinca hogehoge']), xs)
 
-        self.assertIn('_addto_nicknames1', assoc)
-        self.assertIn('nicknames', assoc['_addto_nicknames1'].name)
-        self.assertIn('deris0126', d['_addto_nicknames1'])
+
+        xs = set([d[x.regexp_name] for x in ast.find(('addto', 'nicknames'))
+                 if x.regexp_name in assoc])
+        self.assertEqual(set(['raa0121', 'deris0126']), xs)
+
+
 
         self.assertIn('_addto_description', assoc)
         self.assertEqual('description', assoc['_addto_description'].name)
