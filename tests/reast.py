@@ -8,24 +8,27 @@ from functools import partial
 from lib.reast import *
 
 ws = unnamed(" ")
-class may_be(Base):
-    def make(self, parent):
-        return Option(OneOrMore(ws), Option(*(self.fs))).make(parent)
+
+def may_be(*xs):
+    return Option(OneOrMore(ws), Option(*xs))
 
 
 class ReastTestCase(unittest.TestCase):
     def test_make(self):
         x = named('a', 'a')
-        self.assertEqual("(?P<_a>a(?:))", x.make(''))
+        ast = x.build()
+        self.assertEqual("(?P<_a>a)", ast.make_pat())
         
     def test_compile(self): 
         x = named('a', 'a')
-        got = x.compile()
+        ast = x.build()
+        got = ast.compile()
         self.assertIsNotNone(got)# _sre.SRE_Pattern
 
     def test_match(self):
         x = named('a', 'a')
-        r = x.compile()
+        ast = x.build()
+        r = ast.compile()
         m = r.match('abc')
         self.assertIsNotNone(m.mo)
 
@@ -35,7 +38,8 @@ class ReastTestCase(unittest.TestCase):
                 may_be(named("bar", "bar")),
                 may_be(named("buz", "buz")),
                 unnamed("$"))
-        r = x.compile()
+        ast = x.build()
+        r = ast.compile()
         m = r.match('abc')
         self.assertIsNone(m)
     
@@ -45,20 +49,21 @@ class ReastTestCase(unittest.TestCase):
         m = r.match('a bar')
         self.assertIsNotNone(m)
 
-    def test_make_ast(self):
+    def test_make_capture(self):
         x = named('a', 'a',
                 may_be(named("foo", "foo")),
                 may_be(named("bar", "bar")),
                 may_be(named("baz", "baz")),
                 unnamed("$"))
-        t = x.make_ast()
-        self.assertIsNotNone(t["a"])
-        self.assertIn("foo", t["a"][0])
-        self.assertIsNotNone(t["a"][0]["foo"][0])
-        self.assertIn("bar", t["a"][0])
-        self.assertIsNotNone(t["a"][0]["bar"][0])
-        self.assertIn("baz", t["a"][0])
-        self.assertIsNotNone(t["a"][0]["baz"][0])
+        ast = x.build()
+        cap = ast.make_capture()
+        self.assertIsNotNone(cap["a"])
+        self.assertIn("foo", cap["a"][0])
+        self.assertIsNotNone(cap["a"][0]["foo"][0])
+        self.assertIn("bar", cap["a"][0])
+        self.assertIsNotNone(cap["a"][0]["bar"][0])
+        self.assertIn("baz", cap["a"][0])
+        self.assertIsNotNone(cap["a"][0]["baz"][0])
 
     def test_smart_deep_nesting(self):
         x = named('a', 'a',
@@ -66,11 +71,12 @@ class ReastTestCase(unittest.TestCase):
                     may_be(named("bar", "bar",
                         may_be(named("baz", "baz")))))),
                 unnamed("$"))
-        t = x.make_ast()
-        self.assertIn("foo", t["a"][0])
-        self.assertIn("bar", t["a"][0]["foo"][0])
-        self.assertIn("baz", t["a"][0]["foo"][0]["bar"][0])
-        self.assertIsNotNone(t["a"][0]["foo"][0]["bar"][0]["baz"])
+        astt = x.build()
+        cap = astt.make_capture()
+        self.assertIn("foo", cap["a"][0])
+        self.assertIn("bar", cap["a"][0]["foo"][0])
+        self.assertIn("baz", cap["a"][0]["foo"][0]["bar"][0])
+        self.assertIsNotNone(cap["a"][0]["foo"][0]["bar"][0]["baz"])
 
 
 
@@ -92,21 +98,23 @@ class ReastComplexTestCase(unittest.TestCase):
                         Option(nickname, unnamed("(?!,)"))),
                     may_be(description))
                 ), unnamed("$"))
-        t = x.make_ast()
-        r = x.compile()
+        t = x.build()
+        c = t.make_capture()
+        r = t.compile()
         self.x = x
         self.t = t
+        self.c = c
         self.r = r
 
     def test_add_arg(self):
         m = self.r.match("add hogehoge")
         d = m.groupdict()
-        assoc = self.t.associate(d)
+        assoc = self.c.associate(d)
 
     def test_addto_args(self):
         m = self.r.match("addto raa0121,deris0126,thinca hogehoge")
         d = m.groupdict()
-        assoc = self.t.associate(d)
+        assoc = self.c.associate(d)
 
         self.assertIn('_addto', assoc)
         self.assertEqual('addto', assoc['_addto'].name)
@@ -198,10 +206,12 @@ class BindComplexTestCase(unittest.TestCase):
                         Option(nickname, unnamed("(?!,)"))),
                     may_be(description))
                 ), unnamed("$"))
-        t = x.make_ast()
-        r = x.compile()
+        t = x.build()
+        c = t.make_capture()
+        r = t.compile()
         self.x = x
         self.t = t
+        self.c = c
         self.r = r
 
         def foo(nickname, nicknames, description):
@@ -213,7 +223,7 @@ class BindComplexTestCase(unittest.TestCase):
     def test_(self):
         m = self.r.match("addto raa0121,deris0126,thinca hogehoge")
         d = m.groupdict()
-        assoc = self.t.associate(d)
+        assoc = self.c.associate(d)
         b = bindable(assoc, d, ('addto',))
         missing, too_many = findbind(self.f, b)
         self.assertFalse(missing)

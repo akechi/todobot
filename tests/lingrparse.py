@@ -386,7 +386,8 @@ class ParseTestCase(unittest.TestCase):
 
 class AstNodeTestCase(unittest.TestCase):
     def setUp(self):
-        self.ast = builder.make_ast()
+        self.ast = builder.build()
+        self.cap = self.ast.make_capture()
 
     def test_xxx(self):
         found = parse("#todo listof raa0121 3-12")
@@ -396,7 +397,7 @@ class AstNodeTestCase(unittest.TestCase):
             '_listof_start',
             '_listof_end',
             '_hashtodo']),
-            set(self.ast.associate(found).keys()))
+            set(self.cap.associate(found).keys()))
 
 
 if __name__ == '__main__':

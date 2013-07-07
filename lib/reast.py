@@ -8,7 +8,7 @@ from functools import partial
 from itertools import filterfalse
 
 
-class Node(object):
+class Capture(object):
     def __init__(self, name, parent=None):
         self.name = name
         self.children = {}
@@ -16,7 +16,7 @@ class Node(object):
         self.named_matches = []
 
     def make_child(self, name):
-        c = Node(name, self)
+        c = Capture(name, self)
         if name in self.children:
             xs = self.children[name]
             xs.append(c)
@@ -85,37 +85,45 @@ class Node(object):
         return len(self.n_lets) > 1
 
 
+class ASTNode(object):
+    c = ''
+    d = ''
+    def __init__(self, parent=None):
+        self.parent = parent
+        self.children = []
 
-class Base(object):
-    def __init__(self, *fs):
-        self.fs = fs
+    @property
+    def path(self):
+        if self.parent is None:
+            return ''
+        return self.parent.path
 
     def visit(self, enter, leave):
         enter(self)
-        for f in self.fs:
-            f.visit(enter, leave)
+        for c in self.children:
+            c.visit(enter, leave)
         leave(self)
 
-    def make(self, parent):
+    def make_pat(self):
         return "(?:{}){}".format(
-                self.c.join([f.make(parent) for f in self.fs]),
+                self.c.join([c.make_pat() for c in self.children]),
                 self.d)
 
     def compile(self):
-        return re.compile(self.make(''))
+        return re.compile(self.make_pat())
 
-    def make_ast(self):
-        root = Node('')
+    def make_capture(self):
+        root = Capture('')
 
         stack = [root]
         def enter(rnode):
-            if isinstance(rnode, named):
+            if isinstance(rnode, _named):
                 top = stack[-1]
                 c = top.make_child(rnode.name)
                 stack.append(c)
 
         def leave(rnode):
-            if isinstance(rnode, named):
+            if isinstance(rnode, _named):
                 assert stack[-1].name == rnode.name
                 stack.pop(-1)
 
@@ -124,62 +132,111 @@ class Base(object):
         return root
 
 
-
-class Or(Base):
+class _Or(ASTNode):
     c = '|'
     d = ''
 
-class Cat(Base):
+class _Cat(ASTNode):
     c = ''
     d = ''
 
 
-class Option(Base):
+class _Option(ASTNode):
     c = ''
     d = '?'
 
-class OneOrMore(Base):
+class _OneOrMore(ASTNode):
     c = ''
     d = '+'
 
-class ZeroOrMore(Base):
+class _ZeroOrMore(ASTNode):
     c = ''
     d = '*'
 
 
-class unnamed(Base):
-    def __init__(self, pat, *fs):
-        Base.__init__(self, *fs)
+class _unnamed(ASTNode):
+    def __init__(self, parent, pat):
+        ASTNode.__init__(self, parent)
         self.pat = pat
 
-    def make(self, parent):
-        return "(?:{}".format(self.pat)+ Cat(*(self.fs)).make(parent) + ")"
+    def make_pat(self):
+        return "(?:{0}{1}{2})".format(self.pat,
+                self.c.join([c.make_pat() for c in self.children]),
+                self.d)
 
 
-class named(unnamed):
+class _named(_unnamed):
     SEP = '_'
 
-    def __init__(self, name, pat, *fs):
-        unnamed.__init__(self, pat, *fs)
+    def __init__(self, parent, name, pat):
+        _unnamed.__init__(self, parent, pat)
         self.name = name
 
-    def make_path(self, parent):
-        return parent + self.SEP + self.name
+    @property
+    def path(self):
+        if self.parent is None:
+            return self.SEP + self.name
+        assert isinstance(self.parent, ASTNode)
+        return self.parent.path + self.SEP + self.name
 
-    def make(self, parent):
-        p = self.make_path(parent)
-        return r"(?P<{0}>{1}{2})".format(p, self.pat, Cat(*(self.fs)).make(p))
+    def make_pat(self):
+        return r"(?P<{0}>{1}{2})".format(self.path, self.pat, 
+                self.c.join([c.make_pat() for c in self.children]),
+                self.d)
 
 
-class counted(named):
-    def __init__(self, name, pat, *fs):
-        named.__init__(self, name, pat, *fs)
-        self._counted = {}
-    def make(self, parent):
-        p = self.make_path(parent)
+class _counted(_named):
+    _counted = {}
+    def __init__(self, parent, name, pat):
+        _named.__init__(self, parent, name, pat)
+
+    def make_pat(self):
+        p = self.path
         count = self._counted.get(p, 0)
         self._counted[p] = count + 1
-        return r"(?P<{0}{1}>{2}{3})".format(p, count, self.pat, Cat(*self.fs).make(p))
+        return r"(?P<{0}{1}>{2}{3})".format(p, count, self.pat, 
+                self.c.join([c.make_pat() for c in self.children]),
+                self.d)
+                
+
+class Builder(object):
+    ast_class = ASTNode
+    def __init__(self, *xs):
+        self.xs = xs
+
+    def build(self, parent=None):
+        assert isinstance(parent, ASTNode) or parent is None
+        param = [x for x in self.xs if not isinstance(x, Builder)]
+        print(self.ast_class, param)
+        node = self.ast_class(parent, *param)
+        node.children = [x.build(node) for x in self.xs if isinstance(x, Builder)]
+        return node
+
+class Or(Builder):
+    ast_class = _Or
+
+class Cat(Builder):
+    ast_class = _Cat
+
+class Option(Builder):
+    ast_class = _Option
+
+class OneOrMore(Builder):
+    ast_class = _OneOrMore
+
+class ZeroOrMore(Builder):
+    ast_class = _ZeroOrMore
+
+class unnamed(Builder):
+    ast_class = _unnamed
+
+class named(Builder):
+    ast_class = _named
+
+class counted(Builder):
+    ast_class = _counted
+
+
 
 
 def bindable(assoc, d, nots):
@@ -225,4 +282,8 @@ def findbind(f, d):
 
 
 if __name__ == '__main__':
-    pass
+    x = named('a', 'a')
+    t = x.build()
+    print(t.make_pat())
+    assert "(?P<_a>a(?:))" == t.make_pat()
+

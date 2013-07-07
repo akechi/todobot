@@ -16,7 +16,7 @@ import functools
 from lib.reast import findbind, bindable
 from todo.models import ToDo
 from todo import models
-from todo.lingrparse import rx, ast 
+from todo.lingrparse import rx, ast, cap
 
 
 
@@ -103,7 +103,7 @@ class ToDoBot(object):
 
         method = functools.partial(method, who=who, spool=spool)
 
-        assoc = ast.associate(d)
+        assoc = cap.associate(d)
 
         to_bind = bindable(assoc, d, ('hashtodo', name[1:]))
         missing, toomany = findbind(method, to_bind)

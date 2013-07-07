@@ -16,9 +16,8 @@ expect_nohyph = unnamed("(?!-)")
 ignore_rest = Option(OneOrMore(ws), blackhole)
 
 
-class may_be(Base):
-    def make(self, parent):
-        return Option(OneOrMore(ws), Option(*(self.fs))).make(parent)
+def may_be(*xs):
+    return Option(OneOrMore(ws), Option(*xs))
 
 
 description = named("description", ".+")
@@ -111,8 +110,9 @@ builder = Cat(
             ignore_rest,
   unnamed('$'))
 
-ast = builder.make_ast()
-rx = builder.compile()
+ast = builder.build()
+cap = ast.make_capture()
+rx = ast.compile()
 
 def parse(text):
     m = rx.match(text)
