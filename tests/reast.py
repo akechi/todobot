@@ -98,23 +98,28 @@ class ReastComplexTestCase(unittest.TestCase):
                         Option(nickname, unnamed("(?!,)"))),
                     may_be(description))
                 ), unnamed("$"))
-        t = x.build()
-        c = t.make_capture()
-        r = t.compile()
         self.x = x
-        self.t = t
-        self.c = c
-        self.r = r
+        self.ast = x.build()
+        self.cap = self.ast.make_capture()
+        self.r = self.ast.compile()
 
     def test_add_arg(self):
         m = self.r.match("add hogehoge")
         d = m.groupdict()
-        assoc = self.c.associate(d)
+        ast = self.ast
+        assoc = self.cap.associate(d)
+
+        self.assertIn('_add', assoc)
+        self.assertEqual('add', assoc['_add'].name)
+
+        self.assertIn('_add_description', assoc)
+        self.assertEqual('description', assoc['_add_description'].name)
+        self.assertEqual('hogehoge', d['_add_description'])
 
     def test_addto_args(self):
         m = self.r.match("addto raa0121,deris0126,thinca hogehoge")
         d = m.groupdict()
-        assoc = self.c.associate(d)
+        assoc = self.cap.associate(d)
 
         self.assertIn('_addto', assoc)
         self.assertEqual('addto', assoc['_addto'].name)
@@ -122,6 +127,13 @@ class ReastComplexTestCase(unittest.TestCase):
         self.assertIn('_addto_nickname', assoc)
         self.assertEqual('nickname', assoc['_addto_nickname'].name)
         self.assertEqual('thinca', d['_addto_nickname'])
+
+        ast = self.ast
+        found = ast.find(('addto', ))
+        self.assertTrue(found)
+        self.assertEqual(len(found), 1)
+        found = found.pop()
+        print(found.name, found.regexp_name)
 
         self.assertIn('_addto_nicknames0', assoc)
         self.assertIn('nicknames', assoc['_addto_nicknames0'].name)
@@ -210,12 +222,12 @@ class BindComplexTestCase(unittest.TestCase):
         c = t.make_capture()
         r = t.compile()
         self.x = x
-        self.t = t
+        self.ast = t
         self.c = c
         self.r = r
 
         def foo(nickname, nicknames, description):
-            return "{0}:{1[0]}:{1[1]}:{2}".format(nickname, nicknames, description)
+            return nickname, nicknames, description
 
         self.f = foo 
     
@@ -228,7 +240,10 @@ class BindComplexTestCase(unittest.TestCase):
         missing, too_many = findbind(self.f, b)
         self.assertFalse(missing)
         self.assertFalse(too_many)
-        self.assertEqual('thinca:raa0121:deris0126:hogehoge', self.f(**b))
+        r = self.f(**b)
+        self.assertEqual('thinca', r[0])
+        self.assertEqual(set(['raa0121', 'deris0126']), r[1])
+        self.assertEqual('hogehoge', r[2])
 
 
 if __name__ == '__main__':

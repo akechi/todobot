@@ -9,14 +9,20 @@ from itertools import filterfalse
 
 
 class Capture(object):
-    def __init__(self, name, parent=None):
-        self.name = name
+    def __init__(self, astnode, parent=None):
+        assert isinstance(astnode, ASTNode)
         self.children = {}
         self.parent = parent
         self.named_matches = []
+        self.astnode = astnode
 
-    def make_child(self, name):
-        c = Capture(name, self)
+    @property
+    def name(self):
+        return self.astnode.name
+
+    def make_child(self, astnode):
+        c = Capture(astnode, self)
+        name = astnode.name
         if name in self.children:
             xs = self.children[name]
             xs.append(c)
@@ -43,36 +49,23 @@ class Capture(object):
         for c in self:
             c.pprint(indent+4)
 
-    def path(self):
-        if self.parent:
-            return self.parent.path() + (self.name, )
-        else:
-            return ()
+    @property
+    def regexp_name(self):
+        return self.astnode.regexp_name
 
     def associate(self, d):
         '''
             associate regular expression match object groupdict() and ast.
         '''
         seen = dict()
-        for xs in self.children.values():
-            for i, c in enumerate(xs):
-                p = c.regex_path_string(i)
-                if p in d and d[p] is not None:
-                    seen[p] = c
-                    c.named_matches.append(p)
-                    seen.update(c.associate(d))#{k: v for k, v in d.items() if k != p}))
+        for c in self:
+            p = c.regexp_name
+            if p in d and d[p] is not None:
+                seen[p] = c
+                c.named_matches.append(p)
+                seen.update(c.associate(d))#{k: v for k, v in d.items() if k != p}))
         return seen
 
-    def regex_path_string(self, i):
-        if self.multimatch:
-            return '_' + '_'.join(self.path()) + '{}'.format(i)
-        else:
-            return '_' + '_'.join(self.path())
-
-    def guess_pos(self, path):
-        pos = path.rfind('s')
-        assert pos != -1
-        return int(path[pos+1:])
 
     @property
     def n_lets(self):
@@ -93,10 +86,34 @@ class ASTNode(object):
         self.children = []
 
     @property
-    def path(self):
+    def regexp_name(self):
         if self.parent is None:
             return ''
-        return self.parent.path
+        return self.parent.regexp_name
+
+    @property
+    def path(self):
+        if self.parent:
+            x = getattr(self, 'name', None)
+            if x:
+                return self.parent.path + (x, )
+            return self.parent.path
+        else:
+            return ()
+
+    def find(self, spec, kls=None):
+        if kls is None:
+            kls = _named
+        found = set()
+
+        def enter(node):
+            if node.path == spec and isinstance(node, kls):
+                found.add(node)
+        def leave(node):
+            pass
+        self.visit(enter, leave)
+        return found
+
 
     def visit(self, enter, leave):
         enter(self)
@@ -113,13 +130,13 @@ class ASTNode(object):
         return re.compile(self.make_pat())
 
     def make_capture(self):
-        root = Capture('')
+        root = Capture(self)
 
         stack = [root]
         def enter(rnode):
             if isinstance(rnode, _named):
                 top = stack[-1]
-                c = top.make_child(rnode.name)
+                c = top.make_child(rnode)
                 stack.append(c)
 
         def leave(rnode):
@@ -173,31 +190,29 @@ class _named(_unnamed):
         self.name = name
 
     @property
-    def path(self):
+    def regexp_name(self):
         if self.parent is None:
             return self.SEP + self.name
         assert isinstance(self.parent, ASTNode)
-        return self.parent.path + self.SEP + self.name
+        return self.parent.regexp_name+ self.SEP + self.name
 
     def make_pat(self):
-        return r"(?P<{0}>{1}{2})".format(self.path, self.pat, 
+        return r"(?P<{0}>{1}{2})".format(self.regexp_name, self.pat, 
                 self.c.join([c.make_pat() for c in self.children]),
                 self.d)
 
 
 class _counted(_named):
-    _counted = {}
     def __init__(self, parent, name, pat):
         _named.__init__(self, parent, name, pat)
 
-    def make_pat(self):
-        p = self.path
-        count = self._counted.get(p, 0)
-        self._counted[p] = count + 1
-        return r"(?P<{0}{1}>{2}{3})".format(p, count, self.pat, 
-                self.c.join([c.make_pat() for c in self.children]),
-                self.d)
-                
+    @property
+    def regexp_name(self):
+        if self.parent is None:
+            return self.SEP + self.name
+        assert isinstance(self.parent, ASTNode)
+        return self.parent.regexp_name+ self.SEP + self.name + "{}".format(id(self))
+ 
 
 class Builder(object):
     ast_class = ASTNode
@@ -207,10 +222,11 @@ class Builder(object):
     def build(self, parent=None):
         assert isinstance(parent, ASTNode) or parent is None
         param = [x for x in self.xs if not isinstance(x, Builder)]
-        print(self.ast_class, param)
+        #print(self.ast_class, param)
         node = self.ast_class(parent, *param)
         node.children = [x.build(node) for x in self.xs if isinstance(x, Builder)]
         return node
+
 
 class Or(Builder):
     ast_class = _Or
@@ -237,17 +253,14 @@ class counted(Builder):
     ast_class = _counted
 
 
-
-
 def bindable(assoc, d, nots):
     result = {}
     for k, v in filterfalse(lambda x : x[1].name in nots , assoc.items()):
         if v.multimatch:
             x = result.get(v.name, None)
             if x is None:
-                x = [None for _ in enumerate(v.n_lets)]
-            pos = v.guess_pos(k)
-            x[pos] = d[k]
+                x = set({})
+            x.add(d[k])
         else:
             x = d[k]
         result[v.name] = x
@@ -282,8 +295,36 @@ def findbind(f, d):
 
 
 if __name__ == '__main__':
-    x = named('a', 'a')
+    ws = unnamed(" ")
+    def may_be(*xs):
+        return Option(OneOrMore(ws), Option(*xs))
+    description = named("description", ".+")
+    nicknames = counted("nicknames", "[a-zA-Z@][a-zA-Z0-9_]*")
+    nickname = named("nickname", "[a-zA-Z@][a-zA-Z0-9_]*")
+    comma = unnamed(",")
+
+    x = Cat(Or(named("add", "add", may_be(description)),
+            named("addto", "addto", 
+                may_be(
+                    Option(nicknames, comma),
+                    Option(nicknames, comma),
+                    Option(nicknames, comma),
+                    Option(nicknames, comma),
+                    ZeroOrMore(named("too_many", "", nickname, comma)), 
+                    Option(nickname, unnamed("(?!,)"))),
+                may_be(description))
+            ), unnamed("$"))
+
+    x = x
     t = x.build()
-    print(t.make_pat())
-    assert "(?P<_a>a(?:))" == t.make_pat()
+    cap = t.make_capture()
+    r = t.compile()
+    
+    m = r.match("addto raa0121,deris0126,thinca hogehoge")
+    d = m.groupdict()
+    print(d)
+    assoc = cap.associate(d)
+
+    print(assoc)
+
 
