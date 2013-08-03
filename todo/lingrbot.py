@@ -189,8 +189,9 @@ class ToDoBot(object):
         spool.write('nothing found for {}'.format(who))
         return spool
 
-    def handle_list(self, spool, who, start=None, end=None, keyword=None):
-        """#todo list [start]-[end] [keyword]"""
+    def handle_list(self, spool, who, start=None, end=None, 
+            keyword=None, quoted=None):
+        """#todo list [start-end] [keyword or quoted]"""
         '''
         start = kw.get('range_start',
                 kw.get('range_both_start', 0))
@@ -208,6 +209,11 @@ class ToDoBot(object):
             #FIXME danger!
             for td in ToDo.list_whose(who, status=False).\
                 filter(ToDo.description.like('%{}%'.format(keyword))).\
+                offset(start).limit(limit):
+                spool.add(td)
+        elif quoted is not None:
+            for td in ToDo.list_whose(who, status=False).\
+                filter(ToDo.description.like('%{}%'.format(quoted))).\
                 offset(start).limit(limit):
                 spool.add(td)
         else:
@@ -234,9 +240,9 @@ class ToDoBot(object):
         spool.write('nothing found for {}'.format(nickname))
         return spool
 
-    def handle_listof(self, spool, who, nickname, start=None, end=None, keyword=None):
-        """#todo listof [nickname] [start-end] [keyword]"""
-        return self.handle_list(spool, nickname, start, end, keyword)
+    def handle_listof(self, spool, who, nickname, start=None, end=None, keyword=None, quoted=None):
+        """#todo listof [nickname] [start-end] [keyword or quoted]"""
+        return self.handle_list(spool, nickname, start, end, keyword, quoted)
 
     def handle_list_everything(self, spool, who):
         """#todo list-everything"""

@@ -245,6 +245,17 @@ class ParseTestCase(unittest.TestCase):
         self.assertIn('_list_keyword', found)
         self.assertEqual(found['_list_keyword'], 'momonga')
 
+    def test_list_with_quoted_keyword(self):
+        found = parse('#todo list "momon?!_-ga"')
+        self.assertIsNotNone(found)
+        self.assertIn('_hashtodo', found)
+        self.assertIn('_list', found)
+
+        self.assertNotIn('_list_start', found)
+        self.assertNotIn('_list_end', found)
+        self.assertIn('_list_quoted', found)
+        self.assertEqual(found['_list_quoted'], 'momon?!_-ga')
+
     def test_list_with_jpkeyword(self):
         found = parse("#todo list 仕様")
         self.assertIsNotNone(found)

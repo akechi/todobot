@@ -34,7 +34,8 @@ start = named("start", "\d+")
 rangespec = Cat(Option(expect_nohyph, start, hyph), Option(hyph), Option(end, expect_nohyph))
 
 
-keyword = named("keyword", "\w+")
+keyword = named("keyword", '\w+')
+quoted = Cat(unnamed('"'), named("quoted", r'.+'), unnamed('"'))
 
 
 builder = Cat(
@@ -77,6 +78,7 @@ builder = Cat(
                 ignore_rest),
             named("list", "list", 
                 may_be(rangespec),
+                may_be(quoted),
                 may_be(keyword),
                 ignore_rest),
             named("list_all", "list-all",
@@ -88,6 +90,7 @@ builder = Cat(
             named("listof", "listof",
                 may_be(nickname),
                 may_be(rangespec),
+                may_be(quoted),
                 may_be(keyword),
                 ignore_rest),
             named("listof_all", "listof-all",
@@ -124,11 +127,10 @@ def parse(text):
 if __name__ == '__main__':
     import sys
     if sys.argv[1] == 'pattern':
-        print(r.pattern)
+        print(rx.pattern)
         print("enjoy reading regexp!")
     elif sys.argv[1] == 'ast':
-        t = builder.make_ast()
-        t.pprint()
+        cap.pprint()
 
 
 
