@@ -1,8 +1,10 @@
 
 
+
+
 end point
 http://ujm.chickenkiller.com:9280/python/todo.py
-
+=> isokazeを利用
 
 
 Schemaの変更案
