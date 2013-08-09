@@ -29,22 +29,26 @@ class Spool(object):
         self._pre = ''
         self._post = ''
         self._error = ''
+        self.has_result = False
 
     def add(self, row):
+        self.has_result = True
         self.rows.append(row)
 
     def error(self, s):
         self._error += s
 
     def pre(self, s):
+        self.has_result = True
         self._pre += s
 
     def post(self, s):
+        self.has_result = True
         self._post += s
 
     def render_for_lingr(self, size):
         rows = []
-        if self.rows:
+        if self.has_result:
             t = datetime.now()
             rows += [line for line in self._pre.splitlines()]
             rows += [r.prnformat(t) for r in self.rows]
@@ -58,6 +62,33 @@ class Spool(object):
                 buf = []
             buf.append(next)
         yield '\n'.join(buf)
+
+    def error_bad_command(self):
+        self.error('何をしたいのかわからない。"#todo help" してみて.')
+
+    def error_not_implemented(self, text):
+        self.error('そのcommand実装されてない. "{0}"'.format(text))
+
+    def error_missing_args(self, missing):
+        self.error('引数がたりない "{0}"'.format(missing))
+
+    def error_too_many_args(self, missing):
+        self.error('引数が多すぎる. "{0}"'.format(toomany))
+
+    def error_not_found_for(self, who):
+        self.error('{}のtodoは見つからなかった'.format(who))
+
+    def error_bad_id(self):
+        self.error("そもそも予定じゃない")
+
+    def error_no_such_id(self, s):
+        self.error('そんな予定はない "{}"'.format(s))
+
+    def error_no_permission(self, task=None, who=None): 
+        if task is not None:
+            self.error("{}はお前の予定じゃない\n".format(task.id))
+        if who is not None:
+            self.error('{}はsudoersに入ってないよ'.format(who))
 
 
 class Postman(object):
@@ -103,13 +134,13 @@ class ToDoBot(object):
             return spool
         d = dict([(k, v) for k, v in m.groupdict().items() if v is not None])
         if len(d) == 1:
-            spool.error('何をしたいのかわからない。"#todo help" してみて.')
+            spool.error_bad_command()
             return spool
 
         method, name = self.find_method(d)
 
         if method is None:
-            spool.error('そのcommand実装されてない. "{0}"'.format(text))
+            spool.error_not_implemented(text)
             return spool
 
         method = functools.partial(method, who=who, spool=spool)
@@ -120,10 +151,10 @@ class ToDoBot(object):
         missing, toomany = findbind(method, to_bind)
 
         if missing:
-            spool.error('引数がたりない {0}'.format(missing))
+            spool.error_missing_args(missing)
             return spool
         if toomany:
-            spool.error('引数が多すぎる. {0}'.format(toomany))
+            spool.error_too_many_args(toomany)
             return spool
 
         return method(**to_bind) 
@@ -159,9 +190,9 @@ class ToDoBot(object):
         d = self.make_help_map()
 
         if command is not None and self.make_handler_name(command) in d:
-            spool.error(d[self.make_handler_name(command)] + self.help_postfix)
+            spool.pre(d[self.make_handler_name(command)] + self.help_postfix)
         else:
-            spool.error('\n'.join(d.values()) + self.help_postfix)
+            spool.pre('\n'.join(d.values()) + self.help_postfix)
         return spool
 
     def handle_add(self, spool, who, description):
@@ -188,17 +219,11 @@ class ToDoBot(object):
 
     def handle_list_all(self, spool, who):
         """#todo list-all"""
-        for td in ToDo.list_whose(who):
-            spool.add(td)
-        spool.error('nothing found for {}'.format(who))
-        return spool
+        return self.handle_listof_all(spool, who=who, nickname=who)
 
     def handle_list_done(self, spool, who):
         """#todo list-done"""
-        for td in ToDo.list_whose(who, status=True):
-            spool.add(td)
-        spool.error('nothing found for {}'.format(who))
-        return spool
+        return self.handle_listof_done(spool, who=who, nickname=who)
 
     def handle_list(self, spool, who, start=None, end=None, 
             keyword=None, quoted=None):
@@ -225,7 +250,7 @@ class ToDoBot(object):
 
         n = q.count()
         if n == 0:
-            spool.error('nothing found for {}'.format(who))
+            spool.error_not_found_for(who)
             return spool
         
         q = q.order_by(ToDo.created_at.desc()).\
@@ -242,16 +267,21 @@ class ToDoBot(object):
         if nickname is None:
             return self.handle_help(spool, who, 'listof_all')
 
-        for td in ToDo.list_whose(nickname).order_by(ToDo.created_at.desc()):
+        i = -1
+        for i, td in enumerate(ToDo.list_whose(nickname).order_by(ToDo.created_at.desc())):
             spool.add(td)
-        spool.error('nothing found for {}'.format(nickname))
+
+        if i < 0:
+            spool.error_not_found_for(nickname)
         return spool
 
     def handle_listof_done(self, spool, who, nickname):
         """#todo listof-done [nickname]"""
-        for td in ToDo.list_whose(nickname, status=True).order_by(ToDo.created_at.desc()):
+        i = -1
+        for i, td in enumerate(ToDo.list_whose(nickname, status=True).order_by(ToDo.created_at.desc())):
             spool.add(td)
-        spool.error('nothing found for {}'.format(nickname))
+        if i < 0:
+            spool.error_not_found_for(nickname)
         return spool
 
     def handle_listof(self, spool, who, nickname, start=None, end=None, keyword=None, quoted=None):
@@ -262,17 +292,17 @@ class ToDoBot(object):
         """#todo list-everything"""
         for td in ToDo.list_all():
             spool.add(td)
-        spool.error('nothing found for {}'.format(who))
+        spool.error_not_found_for(who)
         return spool
 
     def handle_moveto(self, spool, who, nickname, task_id):
         """#todo moveto [nickname] [task_id]"""
         if task_id is None:
-            spool.error("そもそも予定じゃない")
+            spool.error_bad_id()
             return spool
         found = ToDo.get(int(task_id))
         if found is None:
-            spool.error("そんな予定はない")
+            spool.error_no_such_id(task_id)
         else:
             old = found.description
             new = old + " ( moved from " + who + ") "
@@ -284,60 +314,60 @@ class ToDoBot(object):
         """#todo done [id] [id] [id] [id] [id]"""
         for task_id in task_ids:
             if task_id is None:
-                spool.error("そもそも予定じゃない")
+                spool.error_bad_id()
                 continue
             found = ToDo.get(int(task_id))
             if found is None:
-                spool.error("そんな予定はない '{}\n'".format(task_id))
+                spool.error_no_such_id(task_id)
                 continue
             if found.username.startswith('@') or found.username == who:
                 found.done()
                 spool.add(found)
             else:
-                spool.error("{}はお前の予定じゃない\n".format(found))
+                spool.error_no_permission(task=found)
         return spool
 
     def handle_edit(self, spool, who, task_id, description):
         """#todo edit [id] [new description]"""
         if task_id is None:
-            spool.error("そもそも予定じゃない")
+            spool.error_bad_id()
             return spool
         found = ToDo.get(int(task_id))
         if found is None:
-            spool.error("そんな予定はない '{}'".format(task_id))
+            spool.error_no_such_id(task_id)
             return spool
         if found.username.startswith('@') or found.username == who:
             found.edit(description=description)
             spool.add(found)
         else:
-            spool.error("それはお前の予定じゃない")
+            spool.error_no_permission(task=found)
         return spool
 
     def handle_del(self, spool, who, task_ids):
         """#todo del [id] [id] [id] [id] [id]"""
         for task_id in task_ids:
             if task_id is None:
-                spool.pre("そもそも予定じゃない\n")
+                spool.error_bad_id()
                 continue
             found = ToDo.get(int(task_id))
             if found is None:
-                spool.pre("そんな予定はない '{}'\n".format(task_id))
+                spool.error_no_such_id(task_id)
                 continue
             if found.username.startswith('@') or found.username == who:
                 found.delete()
                 spool.pre('{}を削除したよ\n'.format(task_id))
             else:
-                spool.pre("{}はお前の予定じゃない\n".format(task_id))
+                spool.error_no_permission(task=found)
         return spool
 
     def handle_show(self, spool, who, task_id=None):
         """#todo show [id]"""
         if task_id is None:
-            spool.pre("そもそも予定じゃない\n")
+            spool.error_bad_id()
             return spool
         found = ToDo.get(int(task_id))
         if found is None:
-            spool.pre("そんな予定はない '{}'\n".format(task_id))
+            spool.error_no_such_id(task_id)
         else:
             spool.add(found)
         return spool
@@ -345,10 +375,10 @@ class ToDoBot(object):
     def handle_sudodel(self, spool, who, task_id):
         """#todo sudodel [id]"""
         if task_id is None:
-            spool.error("そもそも予定じゃない\n")
+            spool.error_bad_id()
             return spool
         if not self.is_admin(who):
-            spool.error('sudoersに入ってないよ')
+            spool.error_no_permission(user=who)
             return spool
         found = ToDo.get(int(task_id)) #just one.
         if found is None:
@@ -363,8 +393,7 @@ class ToDoBot(object):
         if self.is_admin(who):
             if task_id is not None:
                 td = ToDo.get(int(task_id))
-                t = datetime.now()
-                spool.add(td.prnformat(t))
+                spool.add(td)
         return spool
 
     def handle_about(self, spool, who):
