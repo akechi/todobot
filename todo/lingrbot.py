@@ -201,7 +201,7 @@ class ToDoBot(object):
         if start is None:
             start = 0
         if end is None:
-            limit = -1
+            limit = 3
         else:
             limit = int(end) - int(start)
 
@@ -209,15 +209,18 @@ class ToDoBot(object):
             #FIXME danger!
             for td in ToDo.list_whose(who, status=False).\
                 filter(ToDo.description.like('%{}%'.format(keyword))).\
+                order_by(ToDo.created_at.desc()).\
                 offset(start).limit(limit):
                 spool.add(td)
         elif quoted is not None:
             for td in ToDo.list_whose(who, status=False).\
                 filter(ToDo.description.like('%{}%'.format(quoted))).\
+                order_by(ToDo.created_at.desc()).\
                 offset(start).limit(limit):
                 spool.add(td)
         else:
             for td in ToDo.list_whose(who, status=False).\
+                order_by(ToDo.created_at.desc()).\
                 offset(start).limit(limit):
                 spool.add(td)
         spool.write('nothing found for {}'.format(who))
@@ -228,14 +231,14 @@ class ToDoBot(object):
         if nickname is None:
             return self.handle_help(spool, who, 'listof_all')
 
-        for td in ToDo.list_whose(nickname):
+        for td in ToDo.list_whose(nickname).order_by(ToDo.created_at.desc()):
             spool.add(td)
         spool.write('nothing found for {}'.format(nickname))
         return spool
 
     def handle_listof_done(self, spool, who, nickname):
         """#todo listof-done [nickname]"""
-        for td in ToDo.list_whose(nickname, status=True):
+        for td in ToDo.list_whose(nickname, status=True).order_by(ToDo.created_at.desc()):
             spool.add(td)
         spool.write('nothing found for {}'.format(nickname))
         return spool

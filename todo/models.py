@@ -118,9 +118,7 @@ class ToDo(Base):
     @classmethod
     def list_all(cls):
         session = get_session()
-        return session.query(ToDo)
-
-
+        return session.query(ToDo).order_by(ToDo.created_at.desc())
 
 
 
