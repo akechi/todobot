@@ -107,7 +107,7 @@ builder = Cat(
                     may_be(task_id),
                     ignore_rest),
             named("sudel", "sudel", 
-                    may_be(nickname),
+                    may_be(task_id),
                     ignore_rest),
             )),
             ignore_rest,
