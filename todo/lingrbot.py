@@ -264,7 +264,7 @@ class ToDoBot(object):
             spool.write("そんな予定はない")
         else:
             old = found.description
-            new = old + " ( moved from " + who + ")"
+            new = old + " ( moved from " + who + ") "
             found.edit(username=nickname, description=new)
             spool.add(found)
         return spool
@@ -277,14 +277,14 @@ class ToDoBot(object):
                 continue
             found = ToDo.get(int(task_id))
             if found is None:
-                spool.write("そんな予定はない")
+                spool.write("そんな予定はない '{}\n'".format(task_id))
                 continue
             if found.username.startswith('@') or found.username == who:
                 found.done()
                 t = datetime.now()
                 spool.write(found.prnformat(t))
             else:
-                spool.write("それはお前の予定じゃない")
+                spool.write("{}はお前の予定じゃない\n".format(found))
         return spool
 
     def handle_edit(self, spool, who, task_id, description):
@@ -294,7 +294,7 @@ class ToDoBot(object):
             return spool
         found = ToDo.get(int(task_id))
         if found is None:
-            spool.write("そんな予定はない")
+            spool.write("そんな予定はない '{}'".format(task_id))
             return spool
         if found.username.startswith('@') or found.username == who:
             found.edit(description=description)
@@ -312,13 +312,13 @@ class ToDoBot(object):
                 continue
             found = ToDo.get(int(task_id))
             if found is None:
-                spool.write("そんな予定はない")
+                spool.write("そんな予定はない '{}'\n".format(task_id))
                 continue
             if found.username.startswith('@') or found.username == who:
                 found.delete()
-                spool.write('削除したよ')
+                spool.write('{}を削除したよ\n'.format(task_id))
             else:
-                spool.write("それはお前の予定じゃない")
+                spool.write("{}はお前の予定じゃない\n".format(task_id))
         return spool
 
     def handle_show(self, spool, who, task_id=None):
@@ -328,7 +328,7 @@ class ToDoBot(object):
             return spool
         found = ToDo.get(int(task_id))
         if found is None:
-            spool.write("そんな予定はない")
+            spool.write("そんな予定はない '{}'\n".format(task_id))
         else:
             spool.add(found)
         return spool
@@ -343,10 +343,10 @@ class ToDoBot(object):
             return spool
         found = ToDo.get(int(task_id)) #just one.
         if found is None:
-            spool.write("そんな予定はない")
+            spool.write("そんな予定はない '{}'\n".format(task_id))
         else:
             found.delete()
-            spool.write('削除したよ')
+            spool.write('{}を削除したよ\n'.format(task_id))
         return spool
 
     def handle_debug(self, spool, who, task_id):
