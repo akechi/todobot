@@ -205,25 +205,25 @@ class ToDoBot(object):
         else:
             limit = int(end) - int(start)
 
-        if keyword is not None:
-            #FIXME danger!
-            for td in ToDo.list_whose(who, status=False).\
-                filter(ToDo.description.like('%{}%'.format(keyword))).\
-                order_by(ToDo.created_at.desc()).\
-                offset(start).limit(limit):
-                spool.add(td)
-        elif quoted is not None:
-            for td in ToDo.list_whose(who, status=False).\
-                filter(ToDo.description.like('%{}%'.format(quoted))).\
-                order_by(ToDo.created_at.desc()).\
-                offset(start).limit(limit):
-                spool.add(td)
-        else:
-            for td in ToDo.list_whose(who, status=False).\
-                order_by(ToDo.created_at.desc()).\
-                offset(start).limit(limit):
-                spool.add(td)
-        spool.write('nothing found for {}'.format(who))
+        like = keyword if keyword else (quoted if quoted else None)
+        #FIXME danger!
+
+        q = ToDo.list_whose(who, status=False)
+        if like is not None:
+            q = q.filter(ToDo.description.like('%{}%'.format(like)))
+
+        n = q.count()
+        if n == 0:
+            spool.write('nothing found for {}'.format(who))
+            return spool
+        
+        q = q.order_by(ToDo.created_at.desc()).\
+            offset(start).limit(limit)
+        found = q.count()
+
+        spool.write('showing {} of {}'.format(found, n))
+        for td in q:
+            spool.add(td)
         return spool
 
     def handle_listof_all(self, spool, who, nickname=None):
