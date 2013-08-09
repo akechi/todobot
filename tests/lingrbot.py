@@ -253,13 +253,13 @@ class ToDoBotDBTestCase(unittest.TestCase):
         req = self.raa0121.say('#todo done ')
         event = json.loads(req)['events'][0]
         s = self.bot.on_json(event)
-        self.assertTrue(s.text.startswith('引数がたりない'))
+        self.assertTrue(s._error.startswith('引数がたりない'))
 
     def test_done(self):
         req = self.raa0121.say('#todo done 1')
         event = json.loads(req)['events'][0]
         s = self.bot.on_json(event)
-        self.assertTrue(s.text.startswith('[X]'))
+        self.assertTrue(s._error.startswith('[X]'))
 
         result = models.ToDo.list_whose('raa0121', status=False)
         self.assertEqual(1, len([r for r in result]))
@@ -327,7 +327,7 @@ class ToDoBotDBTestCase(unittest.TestCase):
         event = json.loads(req)['events'][0]
         s = self.bot.on_json(event)
 
-        xs = s.text.splitlines()
+        xs = s._error.splitlines()
         self.assertIn("It provides task management feature to lingr room.", xs)
         self.assertIn("see https://github.com/akechi/todobot", xs)
 
