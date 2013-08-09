@@ -292,8 +292,7 @@ class ToDoBot(object):
                 continue
             if found.username.startswith('@') or found.username == who:
                 found.done()
-                t = datetime.now()
-                spool.error(found.prnformat(t))
+                spool.add(found)
             else:
                 spool.error("{}はお前の予定じゃない\n".format(found))
         return spool
@@ -309,8 +308,7 @@ class ToDoBot(object):
             return spool
         if found.username.startswith('@') or found.username == who:
             found.edit(description=description)
-            t = datetime.now()
-            spool.error(found.prnformat(t))
+            spool.add(found)
         else:
             spool.error("それはお前の予定じゃない")
         return spool
@@ -319,27 +317,27 @@ class ToDoBot(object):
         """#todo del [id] [id] [id] [id] [id]"""
         for task_id in task_ids:
             if task_id is None:
-                spool.error("そもそも予定じゃない")
+                spool.pre("そもそも予定じゃない\n")
                 continue
             found = ToDo.get(int(task_id))
             if found is None:
-                spool.error("そんな予定はない '{}'\n".format(task_id))
+                spool.pre("そんな予定はない '{}'\n".format(task_id))
                 continue
             if found.username.startswith('@') or found.username == who:
                 found.delete()
-                spool.error('{}を削除したよ\n'.format(task_id))
+                spool.pre('{}を削除したよ\n'.format(task_id))
             else:
-                spool.error("{}はお前の予定じゃない\n".format(task_id))
+                spool.pre("{}はお前の予定じゃない\n".format(task_id))
         return spool
 
     def handle_show(self, spool, who, task_id=None):
         """#todo show [id]"""
         if task_id is None:
-            spool.error("そもそも予定じゃない")
+            spool.pre("そもそも予定じゃない\n")
             return spool
         found = ToDo.get(int(task_id))
         if found is None:
-            spool.error("そんな予定はない '{}'\n".format(task_id))
+            spool.pre("そんな予定はない '{}'\n".format(task_id))
         else:
             spool.add(found)
         return spool
@@ -347,17 +345,17 @@ class ToDoBot(object):
     def handle_sudodel(self, spool, who, task_id):
         """#todo sudodel [id]"""
         if task_id is None:
-            spool.error("そもそも予定じゃない")
+            spool.error("そもそも予定じゃない\n")
             return spool
         if not self.is_admin(who):
             spool.error('sudoersに入ってないよ')
             return spool
         found = ToDo.get(int(task_id)) #just one.
         if found is None:
-            spool.error("そんな予定はない '{}'\n".format(task_id))
+            spool.pre("そんな予定はない '{}'\n".format(task_id))
         else:
             found.delete()
-            spool.error('{}を削除したよ\n'.format(task_id))
+            spool.pre('{}を削除したよ\n'.format(task_id))
         return spool
 
     def handle_debug(self, spool, who, task_id):
@@ -371,10 +369,10 @@ class ToDoBot(object):
 
     def handle_about(self, spool, who):
         """#todo about"""
-        spool.error("To Do Bot\n")
-        spool.error('on ' + sys.version + '\n')
-        spool.error("It provides task management feature to lingr room.\n")
-        spool.error("see https://github.com/akechi/todobot")
+        spool.pre("To Do Bot\n")
+        spool.pre('on ' + sys.version + '\n')
+        spool.pre("It provides task management feature to lingr room.\n")
+        spool.pre("see https://github.com/akechi/todobot")
         return spool
 
 
